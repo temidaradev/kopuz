@@ -103,6 +103,8 @@ pub fn Sidebar(props: SidebarProps) -> Element {
 
     let extra_padding = if cfg!(target_os = "macos") {
         "pt-10"
+    } else if is_mobile {
+        "pt-0"
     } else {
         ""
     };
@@ -149,13 +151,17 @@ pub fn Sidebar(props: SidebarProps) -> Element {
 
         if is_mobile && !*is_collapsed.read() {
             div {
-                class: "fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] animate-fade-in",
+                class: "fixed inset-0 bg-black/80 backdrop-blur-[2px] z-[90] animate-fade-in",
                 onclick: move |_| is_collapsed.set(true)
             }
         }
 
         div {
-            class: "h-full bg-black/40 text-slate-400 flex flex-col flex-shrink-0 select-none relative transition-all duration-300 ease-out border-r border-white/5 overflow-hidden {extra_padding}",
+            class: if is_mobile {
+                "h-full bg-[#0a0a0a]/95 backdrop-blur-3xl text-slate-400 flex flex-col flex-shrink-0 select-none relative transition-all duration-300 ease-out border-r border-white/10 overflow-hidden rounded-r-[32px] shadow-[20px_0_50px_rgba(0,0,0,0.5)] {extra_padding}"
+            } else {
+                "h-full bg-black/40 text-slate-400 flex flex-col flex-shrink-0 select-none relative transition-all duration-300 ease-out border-r border-white/5 overflow-hidden {extra_padding}"
+            },
             style: "width: {current_width}px; {mobile_sidebar_style}",
 
             div {
@@ -169,7 +175,11 @@ pub fn Sidebar(props: SidebarProps) -> Element {
             }
 
             div {
-                class: "h-20 flex items-center mb-4 transition-all {header_class}",
+                class: if is_mobile {
+                    "h-[calc(env(safe-area-inset-top)_+_3.5rem)] flex items-center justify-between px-6 mb-6 transition-all border-b border-white/5 pt-[env(safe-area-inset-top)] bg-white/5"
+                } else {
+                    "h-20 flex items-center mb-4 transition-all {header_class}"
+                },
                 onmousedown: move |_| {
                     #[cfg(not(any(target_os = "android", target_os = "ios")))]
                     if cfg!(target_os = "macos") {
@@ -185,7 +195,11 @@ pub fn Sidebar(props: SidebarProps) -> Element {
                 }
 
                 button {
-                    class: "p-2 rounded-lg hover:bg-white/5 text-slate-500 hover:text-white transition-all active:scale-95 flex items-center justify-center shrink-0",
+                    class: if is_mobile {
+                        "p-2 rounded-xl bg-white/10 text-white active:scale-95 transition-all flex items-center justify-center shrink-0 border border-white/10 w-10 h-10"
+                    } else {
+                        "p-2 rounded-lg hover:bg-white/5 text-slate-500 hover:text-white transition-all active:scale-95 flex items-center justify-center shrink-0"
+                    },
                     onclick: move |_| is_collapsed.toggle(),
                     i { class: "fa-solid {collapse_icon} w-6 h-6 flex items-center justify-center text-xl" }
                 }

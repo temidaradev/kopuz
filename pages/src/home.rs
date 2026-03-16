@@ -17,13 +17,24 @@ pub fn Home(
 ) -> Element {
     let config = use_context::<Signal<AppConfig>>();
     let is_jellyfin = config.read().active_source == MusicSource::Jellyfin;
+    let is_mobile = cfg!(any(target_os = "android", target_os = "ios"));
 
     rsx! {
         div {
-            class: "p-4 md:p-8 space-y-12 pb-8 animate-fade-in w-full max-w-[1600px] mx-auto",
+            class: if is_mobile {
+                "px-4 animate-fade-in w-full overflow-x-hidden"
+            } else {
+                "p-4 md:p-8 md:pb-8 space-y-10 md:space-y-12 animate-fade-in w-full max-w-[1600px] mx-auto"
+            },
 
-            div { class: "flex items-center justify-between mb-2",
-                h1 { class: "text-4xl font-black text-white tracking-tight", "Home" }
+            if !is_mobile {
+                div { class: "flex items-center justify-between mb-4 md:mb-2 pl-12 md:pl-0",
+                    h1 { class: "text-4xl font-black text-white tracking-tight", "Home" }
+                }
+            } else {
+                div { class: "flex items-center justify-between mb-6 mt-1",
+                    h1 { class: "text-4xl font-black text-white tracking-tight", "Home" }
+                }
             }
 
             if is_jellyfin {

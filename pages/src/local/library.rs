@@ -125,7 +125,9 @@ pub fn LocalLibrary(
 
             div {
                 class: "flex items-center justify-between mb-6",
-                h1 { class: "text-3xl font-bold text-white", "Your Library" }
+                if !cfg!(any(target_os = "android", target_os = "ios")) {
+                    h1 { class: "text-3xl font-bold text-white", "Your Library" }
+                }
                 button {
                     class: "text-white/60 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10",
                     title: "Rescan Library",

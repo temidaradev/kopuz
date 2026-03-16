@@ -41,12 +41,14 @@ pub fn AlbumDetails(
         div {
             class: "w-full max-w-[1600px] mx-auto",
 
-            div { class: "flex items-center justify-between mb-8",
-                button {
-                    class: "flex items-center gap-2 text-slate-400 hover:text-white transition-colors",
-                    onclick: move |_| on_close.call(()),
-                    i { class: "fa-solid fa-arrow-left" }
-                    "Back to Albums"
+            if !cfg!(any(target_os = "android", target_os = "ios")) {
+                div { class: "flex items-center justify-between mb-8",
+                    button {
+                        class: "flex items-center gap-2 text-slate-400 hover:text-white transition-colors",
+                        onclick: move |_| on_close.call(()),
+                        i { class: "fa-solid fa-arrow-left" }
+                        "Back to Albums"
+                    }
                 }
             }
 

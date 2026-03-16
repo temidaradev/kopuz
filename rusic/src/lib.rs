@@ -1,4 +1,7 @@
-use components::{bottombar::Bottombar, mobile_bottombar::MobileBottombar, fullscreen::Fullscreen, sidebar::Sidebar};
+use components::{
+    bottombar::Bottombar, fullscreen::Fullscreen, mobile_bottombar::MobileBottombar,
+    sidebar::Sidebar,
+};
 use dioxus::prelude::*;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use discord_presence::Presence;
@@ -61,7 +64,8 @@ pub fn App() -> Element {
 
     let is_playing = use_signal(|| false);
     let is_fullscreen = use_signal(|| false);
-    let mut is_sidebar_collapsed = use_signal(|| cfg!(any(target_os = "android", target_os = "ios")));
+    let mut is_sidebar_collapsed =
+        use_signal(|| cfg!(any(target_os = "android", target_os = "ios")));
     let mut palette = use_signal(|| Option::<Vec<utils::color::Color>>::None);
 
     use_effect(move || {
@@ -244,7 +248,11 @@ pub fn App() -> Element {
     } else {
         "background-color: var(--color-black); background-image: none;".to_string()
     };
-    let main_scroll_class = if cfg!(any(target_os = "android", target_os = "ios")) { "flex-1 overflow-y-auto pb-24 pt-[env(safe-area-inset-top,4rem)]" } else { "flex-1 overflow-y-auto" };
+    let main_scroll_class = if cfg!(any(target_os = "android", target_os = "ios")) {
+        "flex-1 overflow-y-auto pb-[calc(env(safe-area-inset-bottom)_+_8rem)] pt-[calc(env(safe-area-inset-top)_+_3.5rem)]"
+    } else {
+        "flex-1 overflow-y-auto"
+    };
 
     rsx! {
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1.0, viewport-fit=cover" }
@@ -289,10 +297,55 @@ pub fn App() -> Element {
                     class: "{main_scroll_class}",
 
                     if cfg!(any(target_os = "android", target_os = "ios")) {
-                        button {
-                            class: "fixed top-4 left-4 z-[60] p-3 rounded-xl bg-black/20 backdrop-blur-md border border-white/10 text-white/70 active:scale-95 transition-all",
-                            onclick: move |_| is_sidebar_collapsed.toggle(),
-                            i { class: "fa-solid fa-bars text-xl" }
+                        {
+                            let is_details = match *current_route.read() {
+                                Route::Album => !selected_album_id.read().is_empty(),
+                                Route::Artist => !selected_artist_name.read().is_empty(),
+                                Route::Playlists => selected_playlist_id.read().is_some(),
+                                _ => false,
+                            };
+                            let page_title = match *current_route.read() {
+                                Route::Home => "Home",
+                                Route::Search => "Search",
+                                Route::Library => "Library",
+                                Route::Album => if is_details { "Album" } else { "Albums" },
+                                Route::Artist => if is_details { "Artist" } else { "Artists" },
+                                Route::Playlists => "Playlists",
+                                Route::Favorites => "Favorites",
+                                Route::Logs => "Logs",
+                                Route::Settings => "Settings",
+                            };
+                            rsx! {
+                                div { class: "fixed top-0 left-0 right-0 z-[60] bg-black/40 backdrop-blur-2xl border-b border-white/5 pt-[env(safe-area-inset-top)] flex items-center h-[calc(env(safe-area-inset-top)_+_3.5rem)] px-4 shadow-xl",
+                                    if is_details {
+                                        button {
+                                            class: "w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white active:scale-95 transition-all border border-white/10",
+                                            onclick: move |_| {
+                                                match *current_route.peek() {
+                                                    Route::Album => selected_album_id.set(String::new()),
+                                                    Route::Artist => selected_artist_name.set(String::new()),
+                                                    Route::Playlists => selected_playlist_id.set(None),
+                                                    _ => {}
+                                                }
+                                            },
+                                            i { class: "fa-solid fa-arrow-left text-lg" }
+                                        }
+                                    } else {
+                                        button {
+                                            class: "w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-white active:scale-95 transition-all border border-white/10",
+                                            onclick: move |_| is_sidebar_collapsed.toggle(),
+                                            i { class: "fa-solid fa-bars text-lg" }
+                                        }
+                                    }
+                                    div { class: "flex-1 flex justify-center pr-10",
+                                        h2 {
+                                            class: "text-[13px] font-black tracking-[0.2em] text-white/90 uppercase",
+                                            style: "font-family: 'JetBrains Mono', monospace;",
+                                            "{page_title}"
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                     match *current_route.read() {

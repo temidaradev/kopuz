@@ -29,10 +29,10 @@ pub fn Showcase(props: ShowcaseProps) -> Element {
     let is_jellyfin = config.read().active_source == MusicSource::Jellyfin;
 
     rsx! {
-         div {
+         div { class: "w-full",
              div {
-                 class: "flex flex-col md:flex-row items-end gap-8 mb-12",
-                 div { class: "w-64 h-64 rounded-xl bg-stone-800 overflow-hidden relative flex-shrink-0",
+                 class: "flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 mb-8 md:mb-12 px-4 md:px-0 w-full",
+                 div { class: "w-56 h-56 md:w-80 md:h-80 rounded-2xl md:rounded-[32px] bg-stone-800 overflow-hidden relative flex-shrink-0 shadow-2xl",
                      if let Some(url) = &props.cover_url {
                          img { src: "{url}", class: "w-full h-full object-cover" }
                      } else {
@@ -41,24 +41,24 @@ pub fn Showcase(props: ShowcaseProps) -> Element {
                          }
                      }
                  }
-                 div { class: "flex-1",
+                 div { class: "flex-1 w-full text-center md:text-left",
                      if !props.description.is_empty() {
-                         h5 { class: "text-sm font-bold tracking-widest text-white/60 uppercase mb-2", "{props.description}" }
+                         h5 { class: "text-[11px] md:text-sm font-black tracking-[0.2em] text-white/40 uppercase mb-2", "{props.description}" }
                      }
-                     h1 { class: "text-5xl md:text-7xl font-bold text-white mb-6", "{props.name}" }
-                     div { class: "flex items-center gap-6 text-slate-400",
+                     h1 { class: "text-3xl md:text-7xl font-extrabold text-white mb-4 md:mb-6 tracking-tight leading-tight", "{props.name}" }
+                     div { class: "flex items-center justify-center md:justify-start gap-4 text-[13px] font-medium text-white/40 mb-6 md:mb-0",
                          p { "{props.tracks.len()} songs" }
-                         span { "•" }
+                         span { class: "text-white/20", "•" }
                          p { "{duration_min} min" }
                      }
                  }
 
-                div { class: "flex items-center gap-4",
+                div { class: "flex items-center gap-4 w-full md:w-auto justify-center md:justify-start pr-2 md:pr-0",
                      if !props.tracks.is_empty() {
                          button {
-                             class: "w-14 h-14 rounded-full bg-indigo-500 hover:bg-indigo-400 text-black flex items-center justify-center transition-transform hover:scale-105",
+                             class: "w-14 h-14 md:w-16 md:h-16 rounded-full bg-indigo-500 hover:bg-indigo-400 text-black flex items-center justify-center transition-all hover:scale-105 shadow-lg shadow-indigo-500/20 active:scale-95",
                              onclick: move |_| props.on_play.call(0),
-                             i { class: "fa-solid fa-play text-xl ml-1" }
+                             i { class: "fa-solid fa-play text-xl md:text-2xl ml-1" }
                          }
                      }
                      if let Some(actions) = props.actions {
@@ -74,7 +74,7 @@ pub fn Showcase(props: ShowcaseProps) -> Element {
                          p { class: "text-lg", "No songs here." }
                      }
                  } else {
-                     div { class: "grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-4 py-2 border-b border-white/5 text-sm font-medium text-slate-500 mb-2 uppercase tracking-wider",
+                     div { class: "hidden md:grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-4 py-2 border-b border-white/5 text-sm font-medium text-slate-500 mb-2 uppercase tracking-wider",
                           div { class: "w-8 text-center", "#" }
                           div { "Title" }
                           div { "Album" }

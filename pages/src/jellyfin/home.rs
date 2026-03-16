@@ -312,6 +312,236 @@ pub fn JellyfinHome(
         let _ = document::eval(&script);
     };
 
+    let is_mobile = cfg!(any(target_os = "android", target_os = "ios"));
+    if is_mobile {
+        return rsx! {
+            div { class: "space-y-12 pb-6",
+                section { class: "relative h-[400px] rounded-[32px] overflow-hidden shadow-2xl mx-1",
+                    {
+                        let jelly_list = jellyfin_shuffled.read();
+                        if let Some((album_id, title, artist, cover_url)) = jelly_list.first() {
+                            rsx! {
+                                div { class: "absolute inset-0 bg-stone-900",
+                                    if let Some(url) = cover_url {
+                                        img { src: "{url}", class: "w-full h-full object-cover opacity-90 scale-105" }
+                                    }
+                                    div { class: "absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" }
+                                }
+                                div { class: "absolute inset-x-0 bottom-0 p-6 flex flex-col justify-end",
+                                    span { class: "text-indigo-400 font-bold tracking-widest uppercase text-[10px] mb-2 flex items-center gap-2 drop-shadow-md",
+                                        i { class: "fa-solid fa-star text-[8px]" }
+                                        "Featured"
+                                    }
+                                    h1 { class: "text-3xl font-black text-white mb-1 leading-tight line-clamp-2 drop-shadow-md", "{title}" }
+                                    p { class: "text-sm text-white/80 mb-6 font-medium line-clamp-1 drop-shadow-md", "By {artist}" }
+                                    div { class: "flex items-center gap-3",
+                                        button {
+                                            class: "flex-1 flex items-center justify-center gap-2 bg-white text-black py-4 rounded-2xl font-bold active:scale-95 transition-all shadow-xl",
+                                            onclick: {
+                                                let id = album_id.clone();
+                                                move |_| on_play_album.call(id.clone())
+                                            },
+                                            i { class: "fa-solid fa-play text-[12px]" }
+                                            span { class: "text-sm", "Play Now" }
+                                        }
+                                        {
+                                            let album_id_hero = album_id.clone();
+                                            let jelly_hero_fav = {
+                                                let lib = library.read();
+                                                let store = favorites_store.read();
+                                                let tracks: Vec<_> = lib.jellyfin_tracks.iter().filter(|t| t.album_id == *album_id).collect();
+                                                !tracks.is_empty() && tracks.iter().all(|t| {
+                                                    let path_str = t.path.to_string_lossy();
+                                                    let parts: Vec<&str> = path_str.split(':').collect();
+                                                    parts.len() >= 2 && store.is_jellyfin_favorite(parts[1])
+                                                })
+                                            };
+                                            let hero_heart_class = if jelly_hero_fav {
+                                                "w-[56px] h-[56px] shrink-0 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-red-400 active:scale-95 transition-all shadow-xl"
+                                            } else {
+                                                "w-[56px] h-[56px] shrink-0 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white active:scale-95 transition-all shadow-xl"
+                                            };
+                                            let hero_heart_icon = if jelly_hero_fav { "fa-solid fa-heart" } else { "fa-regular fa-heart" };
+                                            rsx! {
+                                                button {
+                                                    class: "{hero_heart_class}",
+                                                    onclick: move |_| {
+                                                        let lib = library.read();
+                                                        let tracks: Vec<_> = lib.jellyfin_tracks.iter().filter(|t| t.album_id == album_id_hero).cloned().collect();
+                                                        drop(lib);
+                                                        let new_fav = !jelly_hero_fav;
+                                                        for track in &tracks {
+                                                            let path_str = track.path.to_string_lossy().to_string();
+                                                            let parts: Vec<&str> = path_str.split(':').collect();
+                                                            if parts.len() >= 2 { favorites_store.write().set_jellyfin(parts[1].to_string(), new_fav); }
+                                                        }
+                                                        let track_ids: Vec<String> = tracks.iter().filter_map(|t| {
+                                                            let path_str = t.path.to_string_lossy().to_string();
+                                                            let parts: Vec<&str> = path_str.split(':').collect();
+                                                            if parts.len() >= 2 { Some(parts[1].to_string()) } else { None }
+                                                        }).collect();
+                                                        spawn(async move {
+                                                            let (server_config, device_id) = {
+                                                                let conf = config.peek();
+                                                                if let Some(server) = &conf.server {
+                                                                    if let (Some(token), Some(user_id)) = (&server.access_token, &server.user_id) {
+                                                                        (Some((server.url.clone(), token.clone(), user_id.clone())), conf.device_id.clone())
+                                                                    } else { (None, conf.device_id.clone()) }
+                                                                } else { (None, conf.device_id.clone()) }
+                                                            };
+                                                            if let Some((url, token, user_id)) = server_config {
+                                                                let remote = JellyfinRemote::new(&url, Some(&token), &device_id, Some(&user_id));
+                                                                for id in &track_ids {
+                                                                    let _ = if new_fav { remote.mark_favorite(id).await } else { remote.unmark_favorite(id).await };
+                                                                }
+                                                            }
+                                                        });
+                                                    },
+                                                    i { class: "{hero_heart_icon} text-xl" }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            rsx! { div {} }
+                        }
+                    }
+                }
+
+                {
+                    let jelly_list = jellyfin_shuffled.read();
+                    if !jelly_list.is_empty() {
+                        rsx! {
+                            section {
+                                h2 { class: "text-2xl font-black text-white mb-5 px-1 tracking-tight", "Listen Now" }
+                                div {
+                                    class: "flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory",
+                                    for (album_id, title, artist, cover_url) in jelly_list.iter().skip(1).take(10) {
+                                        div {
+                                            class: "flex-none w-[150px] snap-start group cursor-pointer active:scale-95 transition-transform",
+                                            onclick: {
+                                                let id = album_id.clone();
+                                                move |_| on_select_album.call(id.clone())
+                                            },
+                                            div { class: "w-[150px] h-[150px] rounded-2xl bg-white/5 mb-3 overflow-hidden shadow-lg border border-white/5",
+                                                if let Some(url) = cover_url {
+                                                    img { src: "{url}", class: "w-full h-full object-cover" }
+                                                } else {
+                                                    div { class: "w-full h-full flex items-center justify-center",
+                                                        i { class: "fa-solid fa-compact-disc text-3xl text-white/20" }
+                                                    }
+                                                }
+                                            }
+                                            h3 { class: "text-sm text-white font-bold truncate px-0.5", "{title}" }
+                                            p { class: "text-[12px] text-white/50 font-medium truncate px-0.5 mt-0.5", "{artist}" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        rsx! { div {} }
+                    }
+                }
+
+
+
+                if !jellyfin_artists().is_empty() {
+                    section {
+                        h2 { class: "text-2xl font-black text-white mb-5 px-1 tracking-tight", "Top Artists" }
+                        div {
+                            class: "flex overflow-x-auto gap-5 pb-4 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory",
+                            for (artist, cover_url) in jellyfin_artists() {
+                                div {
+                                    class: "flex-none w-[130px] snap-start group cursor-pointer active:scale-95 transition-transform",
+                                    onclick: {
+                                        let artist = artist.clone();
+                                        move |_| on_search_artist.call(artist.clone())
+                                    },
+                                    div { class: "w-[130px] h-[130px] rounded-full bg-white/5 mb-3 overflow-hidden shadow-lg border border-white/5 mx-auto",
+                                        if let Some(url) = cover_url {
+                                            img { src: "{url}", class: "w-full h-full object-cover" }
+                                        } else {
+                                            div { class: "w-full h-full flex items-center justify-center",
+                                                i { class: "fa-solid fa-microphone text-3xl text-white/20" }
+                                            }
+                                        }
+                                    }
+                                    h3 { class: "text-[13px] text-white font-bold text-center truncate px-1", "{artist}" }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !jellyfin_albums_all().is_empty() {
+                    section {
+                        h2 { class: "text-2xl font-black text-white mb-5 px-1 tracking-tight", "New Releases" }
+                        div {
+                            class: "flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory",
+                            for (album_id, title, artist, cover_url) in jellyfin_albums_limited() {
+                                div {
+                                    class: "flex-none w-[150px] snap-start group cursor-pointer active:scale-95 transition-transform",
+                                    onclick: {
+                                        let id = album_id.clone();
+                                        move |_| on_select_album.call(id.clone())
+                                    },
+                                    div { class: "aspect-square rounded-2xl bg-white/5 mb-3 overflow-hidden shadow-lg border border-white/5",
+                                        if let Some(url) = cover_url {
+                                            img { src: "{url}", class: "w-full h-full object-cover" }
+                                        } else {
+                                            div { class: "w-full h-full flex items-center justify-center",
+                                                i { class: "fa-solid fa-compact-disc text-3xl text-white/20" }
+                                            }
+                                        }
+                                    }
+                                    h3 { class: "text-sm text-white font-bold truncate px-0.5", "{title}" }
+                                    p { class: "text-[12px] text-white/50 font-medium truncate px-0.5 mt-0.5", "{artist}" }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !recent_playlists().is_empty() {
+                    section {
+                        h2 { class: "text-2xl font-black text-white mb-5 px-1 tracking-tight", "Playlists" }
+                        div {
+                            class: "flex overflow-x-auto gap-4 pb-4 -mx-4 px-4 scrollbar-hide snap-x snap-mandatory",
+                            for (id, name, count, cover_url) in recent_playlists() {
+                                div {
+                                    class: "flex-none w-[150px] snap-start group cursor-pointer active:scale-95 transition-transform",
+                                    onclick: {
+                                        let id = id.clone();
+                                        move |_| on_select_playlist.call(id.clone())
+                                    },
+                                    div { class: "aspect-square rounded-2xl bg-white/5 mb-3 overflow-hidden shadow-lg border border-white/5",
+                                        if let Some(track) = cover_url {
+                                            if let Some(url) = utils::format_artwork_url(Some(&std::path::PathBuf::from(&track))) {
+                                                img { src: "{url}", class: "w-full h-full object-cover" }
+                                            } else {
+                                                div { class: "w-full h-full flex items-center justify-center",
+                                                    i { class: "fa-solid fa-list text-3xl text-white/20" }
+                                                }
+                                            }
+                                        } else {
+                                            div { class: "w-full h-full flex items-center justify-center",
+                                                i { class: "fa-solid fa-list text-3xl text-white/20" }
+                                            }
+                                        }
+                                    }
+                                    h3 { class: "text-sm text-white font-bold truncate px-0.5", "{name}" }
+                                    p { class: "text-[12px] text-white/50 font-medium truncate px-0.5 mt-0.5", "{count} tracks" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    }
     rsx! {
         div {
             section { class: "relative h-[350px] rounded-3xl overflow-hidden mb-12",

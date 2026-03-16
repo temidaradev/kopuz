@@ -1,9 +1,9 @@
 use components::playlist_detail::PlaylistDetail;
+use components::playlist_popups::AddPlaylistPopup;
 use config::{AppConfig, MusicSource};
 use dioxus::prelude::*;
 use player::player;
 use reader::{Library, PlaylistStore};
-use components::playlist_popups::AddPlaylistPopup;
 
 use crate::jellyfin::playlists::JellyfinPlaylists;
 use crate::local::playlists::LocalPlaylists;
@@ -30,7 +30,7 @@ pub fn PlaylistsPage(
     let mut show_add_playlist = use_signal(|| false);
     let mut playlist_name = use_signal(|| String::new());
     let mut error = use_signal(|| Option::<String>::None);
-    
+
     let handle_add_playlist = move |_| {
         let mut store = playlist_store.write();
         store.playlists.push(reader::models::Playlist {

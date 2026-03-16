@@ -209,7 +209,9 @@ pub fn Album(
 
             if album_id.read().is_empty() {
                 div {
-                    h1 { class: "text-3xl font-bold text-white mb-6", "All Albums" }
+                    if !cfg!(any(target_os = "android", target_os = "ios")) {
+                        h1 { class: "text-3xl font-bold text-white mb-6", "All Albums" }
+                    }
 
                     if is_jellyfin {
                         JellyfinAlbum {

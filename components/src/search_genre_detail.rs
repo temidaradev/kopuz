@@ -31,11 +31,13 @@ pub fn SearchGenreDetail(
     rsx! {
         div {
             class: "space-y-6",
-            button {
-                class: "mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors",
-                 onclick: move |_| on_back.call(()),
-                 i { class: "fa-solid fa-arrow-left" }
-                 "Back to Browse"
+            if !cfg!(any(target_os = "android", target_os = "ios")) {
+                button {
+                    class: "mb-4 flex items-center gap-2 text-slate-400 hover:text-white transition-colors",
+                    onclick: move |_| on_back.call(()),
+                    i { class: "fa-solid fa-arrow-left" }
+                    "Back to Browse"
+                }
             }
 
             div { class: "flex items-end gap-6 mb-8",

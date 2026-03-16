@@ -6,6 +6,7 @@ pub mod jellyfin;
 pub mod library;
 pub mod local;
 pub mod logs;
+pub mod mobile_home;
 pub mod playlists;
 pub mod search;
 pub mod settings;
