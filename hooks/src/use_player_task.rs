@@ -69,10 +69,10 @@ pub fn use_player_task(ctrl: PlayerController) {
     let mut discord_cover_resolving_for = use_signal(String::new);
     let mut discord_cover_sent = use_signal(|| false);
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
     use_hook(move || {
         init_bg_channel();
-        set_background_handler(move |event| {
+        player::systemint::set_background_handler(move |event| {
             use player::systemint::SystemEvent;
             let cmd = match event {
                 SystemEvent::Play => BgCmd::Play,

@@ -10,11 +10,16 @@ rodio = { workspace = true }
 objc2 = { version = "0.6.3", features = ["std"] }
 objc2-foundation = { version = "0.3.2", features = ["NSString", "NSDictionary", "NSValue", "NSObject", "NSURL", "NSProcessInfo"] }
 objc2-media-player = { version = "0.3.2", features = ["MPNowPlayingInfoCenter", "MPMediaItem", "MPRemoteCommandCenter", "MPRemoteCommand"] }
-objc2-app-kit = { version = "0.3.2", features = ["NSImage"] }
 objc2-av-foundation = { version = "0.3.2", features = ["AVAudioSession"] }
 objc2-avf-audio = { version = "0.3.2", features = ["AVAudioSession"] }
 block2 = "0.6"
 tokio = { workspace = true, features = ["full"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3.2", features = ["NSImage"] }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+objc2-ui-kit = { version = "0.3.2", features = ["UIImage"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"

@@ -5,6 +5,7 @@ use std::sync::{Arc, OnceLock};
 use block2::RcBlock;
 use objc2::AllocAnyThread;
 use objc2::runtime::{AnyObject, ProtocolObject};
+#[cfg(target_os = "macos")]
 use objc2_app_kit::NSImage;
 use objc2_avf_audio::{AVAudioSession, AVAudioSessionCategoryPlayback};
 use objc2_foundation::{
@@ -17,6 +18,8 @@ use objc2_media_player::{
     MPNowPlayingInfoPropertyPlaybackRate, MPRemoteCommandCenter, MPRemoteCommandEvent,
     MPRemoteCommandHandlerStatus,
 };
+#[cfg(target_os = "ios")]
+use objc2_ui_kit::UIImage as NSImage;
 
 unsafe extern "C" {
     fn CFRunLoopGetMain() -> *mut std::ffi::c_void;
@@ -68,14 +71,18 @@ pub fn init() {
     static ONCE: OnceLock<()> = OnceLock::new();
     ONCE.get_or_init(|| unsafe {
         use objc2::ClassType;
-        let process_info: *mut AnyObject = objc2::msg_send![NSProcessInfo::class(), processInfo];
-        let reason = NSString::from_str("Rusic Background Audio Playback");
-        let options: u64 = 0x00FFFFFF;
-        let activity: *mut AnyObject =
-            objc2::msg_send![process_info, beginActivityWithOptions: options, reason: &*reason];
-        if !activity.is_null() {
-            let _: *mut AnyObject = objc2::msg_send![activity, retain];
-            println!("[macos] App Nap bypassed with NSProcessInfo activity");
+        #[cfg(target_os = "macos")]
+        {
+            let process_info: *mut AnyObject =
+                objc2::msg_send![NSProcessInfo::class(), processInfo];
+            let reason = NSString::from_str("Rusic Background Audio Playback");
+            let options: u64 = 0x00FFFFFF;
+            let activity: *mut AnyObject =
+                objc2::msg_send![process_info, beginActivityWithOptions: options, reason: &*reason];
+            if !activity.is_null() {
+                let _: *mut AnyObject = objc2::msg_send![activity, retain];
+                println!("[macos] App Nap bypassed with NSProcessInfo activity");
+            }
         }
 
         let session = AVAudioSession::sharedInstance();
@@ -208,7 +215,12 @@ pub fn update_now_playing(
                 );
             } else {
                 let ns_path = NSString::from_str(path);
-                if let Some(image) = NSImage::initWithContentsOfFile(NSImage::alloc(), &ns_path) {
+                #[cfg(target_os = "macos")]
+                let image_opt = NSImage::initWithContentsOfFile(NSImage::alloc(), &ns_path);
+                #[cfg(target_os = "ios")]
+                let image_opt = NSImage::imageWithContentsOfFile(&ns_path);
+
+                if let Some(image) = image_opt {
                     use objc2::msg_send;
                     let artwork_alloc = MPMediaItemArtwork::alloc();
                     let artwork_ptr: *mut MPMediaItemArtwork = std::mem::transmute(artwork_alloc);
