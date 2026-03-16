@@ -32,3 +32,4 @@ windows = { version = "0.62", features = [
     "Win32_System_Com",
 ] }
 tokio = { workspace = true, features = ["full"] }
+reqwest = { workspace = true, features = ["blocking"] }

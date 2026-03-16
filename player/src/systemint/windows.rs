@@ -2,12 +2,15 @@ use std::sync::OnceLock;
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use windows::{
-    Foundation::{TimeSpan, TypedEventHandler},
+    Foundation::{TimeSpan, TypedEventHandler, Uri},
     Media::{
         MediaPlaybackStatus, MediaPlaybackType, PlaybackPositionChangeRequestedEventArgs,
         SystemMediaTransportControls,
         SystemMediaTransportControlsButton, SystemMediaTransportControlsButtonPressedEventArgs,
         SystemMediaTransportControlsTimelineProperties,
+    },
+    Storage::Streams::{
+        DataWriter, InMemoryRandomAccessStream, RandomAccessStreamReference,
     },
     Win32::{
         Foundation::{HWND, LPARAM},
@@ -234,6 +237,34 @@ fn secs_to_timespan(secs: f64) -> TimeSpan {
     TimeSpan { Duration: (secs * 10_000_000.0) as i64 }
 }
 
+// helper funcs: wrap raw bytes in an in-memory stream SMTC can read 
+// or fetch image bytes from either a local path or an url
+fn stream_ref_from_bytes(bytes: &[u8]) -> Option<RandomAccessStreamReference> {
+    let stream = InMemoryRandomAccessStream::new().ok()?;
+    let writer = DataWriter::CreateDataWriter(&stream).ok()?;
+    writer.WriteBytes(bytes).ok()?;
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .ok()?
+        .block_on(async { writer.StoreAsync().ok()?.await.ok() })?;
+    writer.DetachStream().ok()?;
+    stream.Seek(0).ok()?; // rewind so SMTC reads from the start
+    RandomAccessStreamReference::CreateFromStream(&stream).ok()
+}
+
+fn fetch_artwork_bytes(path: &str) -> Option<Vec<u8>> {
+    if path.starts_with("http://") || path.starts_with("https://") {
+        let resp = reqwest::blocking::get(path).ok()?;
+        if resp.status().is_success() {
+            resp.bytes().ok().map(|b| b.to_vec())
+        } else {
+            None
+        }
+    } else {
+        std::fs::read(path).ok()
+    }
+}
+
 pub fn update_now_playing(
     title: &str,
     artist: &str,
@@ -241,7 +272,7 @@ pub fn update_now_playing(
     _duration: f64,
     _position: f64,
     playing: bool,
-    _artwork_path: Option<&str>,
+    artwork_path: Option<&str>,
 ) {
     // init in case init() wasn't called before the first track plays
     if SMTC.get().is_none() {
@@ -265,7 +296,31 @@ pub fn update_now_playing(
             let _ = props.SetAlbumTitle(&windows::core::HSTRING::from(album));
         }
 
-        // TODO: artwork
+        if let Some(art) = artwork_path {
+            if art.starts_with("http://") || art.starts_with("https://") {
+                // Jellyfin: give the url directly to SMTC, it fetches lazily
+                if let Ok(uri) = Uri::CreateUri(&windows::core::HSTRING::from(art)) {
+                    if let Ok(stream_ref) = RandomAccessStreamReference::CreateFromUri(&uri) {
+                        let _ = updater.SetThumbnail(&stream_ref);
+                    }
+                }
+            } else {
+                // Local: read bytes on a background thread, then apply thumbnail
+                let art_owned = art.to_string();
+                std::thread::spawn(move || {
+                    if let Some(bytes) = fetch_artwork_bytes(&art_owned) {
+                        if let Some(stream_ref) = stream_ref_from_bytes(&bytes) {
+                            if let Some(smtc) = SMTC.get() {
+                                if let Ok(updater) = smtc.0.DisplayUpdater() {
+                                    let _ = updater.SetThumbnail(&stream_ref);
+                                    let _ = updater.Update();
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
         
         let _ = updater.Update();
     }
