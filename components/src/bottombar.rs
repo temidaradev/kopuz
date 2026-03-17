@@ -19,6 +19,7 @@ pub fn Bottombar(
     mut current_song_artist: Signal<String>,
     mut current_song_cover_url: Signal<String>,
     mut volume: Signal<f32>,
+    mut is_rightbar_open: Signal<bool>,
 ) -> Element {
     let format_time = |seconds: u64| {
         let minutes = seconds / 60;
@@ -282,6 +283,11 @@ pub fn Bottombar(
                             }
                         }
                     }
+                }
+                button {
+                    class: "text-slate-400 hover:text-white",
+                    onclick: move |_| { let c = *is_rightbar_open.read(); is_rightbar_open.set(!c); },
+                    i { class: "fa-solid fa-list text-xs" }
                 }
                 button {
                     class: "text-slate-400 hover:text-white",

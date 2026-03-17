@@ -28,6 +28,7 @@ pub struct PlayerController {
     pub is_playing: Signal<bool>,
     pub is_loading: Signal<bool>,
     pub skip_in_progress: Signal<bool>,
+    pub history: Signal<Vec<usize>>,
     pub queue: Signal<Vec<Track>>,
     pub shuffle: Signal<bool>,
     pub loop_mode: Signal<LoopMode>,
@@ -48,6 +49,16 @@ pub struct PlayerController {
 
 impl PlayerController {
     pub fn play_track(&mut self, idx: usize) {
+        let current_idx = *self.current_queue_index.peek();
+        self.history.with_mut(|h| {
+            if h.last() != Some(&current_idx) {
+                h.push(current_idx);
+            }
+        });
+        self.play_track_no_history(idx);
+    }
+
+    pub fn play_track_no_history(&mut self, idx: usize) {
         self.play_generation.with_mut(|g| *g += 1);
         let current_gen = *self.play_generation.peek();
 
@@ -403,20 +414,15 @@ impl PlayerController {
             return;
         }
 
-        if *self.shuffle.peek() && queue_len > 1 {
-            let mut rng = rand::thread_rng();
-            use rand::Rng;
-            let mut prev_idx = rng.gen_range(0..queue_len);
-            while prev_idx == idx {
-                prev_idx = rng.gen_range(0..queue_len);
-            }
-            self.play_track(prev_idx);
-        } else if *self.shuffle.peek() && queue_len == 1 {
-            self.play_track(0);
-        } else if idx > 0 {
-            self.play_track(idx - 1);
+        if let Some(prev_idx) = self.history.with_mut(|h| h.pop()) {
+             self.play_track_no_history(prev_idx);
+             return;
+        }
+
+        if idx > 0 {
+            self.play_track_no_history(idx - 1);
         } else if *self.loop_mode.peek() == LoopMode::Queue {
-            self.play_track(queue_len - 1);
+            self.play_track_no_history(queue_len - 1);
         }
     }
 
@@ -467,6 +473,7 @@ pub fn use_player_controller(
     let play_generation = use_signal(|| 0);
     let is_loading = use_signal(|| false);
     let skip_in_progress = use_signal(|| false);
+    let history = use_signal(|| Vec::new());
     let shuffle = use_signal(|| false);
     let loop_mode = use_signal(|| LoopMode::None);
 
@@ -475,6 +482,7 @@ pub fn use_player_controller(
         is_playing,
         is_loading,
         skip_in_progress,
+        history,
         queue,
         shuffle,
         loop_mode,

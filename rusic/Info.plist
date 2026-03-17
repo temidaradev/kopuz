@@ -17,7 +17,7 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.2.0</string>
+    <string>0.3.3</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
@@ -28,17 +28,17 @@
     <true/>
     <key>NSSupportsAppNap</key>
     <false/>
-    
+
     <!-- Crucial for background audio -->
     <key>UIBackgroundModes</key>
     <array>
         <string>audio</string>
     </array>
-    
+
     <!-- Prevent automatic termination -->
     <key>NSSupportsAutomaticTermination</key>
     <false/>
-    
+
     <!-- Suggest to the OS that we shouldn't sleep (though modern macOS often ignores this) -->
     <key>NSAppSleepDisabled</key>
     <true/>

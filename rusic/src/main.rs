@@ -1,4 +1,4 @@
-use components::{bottombar::Bottombar, fullscreen::Fullscreen, sidebar::Sidebar};
+use components::{bottombar::Bottombar, fullscreen::Fullscreen, sidebar::Sidebar, rightbar::Rightbar};
 use dioxus::desktop::tao::dpi::LogicalSize;
 #[cfg(target_os = "macos")]
 use dioxus::desktop::tao::platform::macos::WindowBuilderExtMacOS;
@@ -173,6 +173,7 @@ fn App() -> Element {
 
     let is_playing = use_signal(|| false);
     let is_fullscreen = use_signal(|| false);
+    let mut is_rightbar_open = use_signal(|| false);
     let mut palette = use_signal(|| Option::<Vec<utils::color::Color>>::None);
 
     use_effect(move || {
@@ -557,6 +558,17 @@ fn App() -> Element {
                         Route::Settings => rsx! { pages::settings::Settings { config } },
                     }
                 }
+                Rightbar {
+                    library: library,
+                    is_rightbar_open: is_rightbar_open,
+                    current_song_duration: current_song_duration,
+                    current_song_progress: current_song_progress,
+                    queue: queue,
+                    current_queue_index: current_queue_index,
+                    current_song_title: current_song_title,
+                    current_song_artist: current_song_artist,
+                    current_song_album: current_song_album,
+                }
             }
             Fullscreen {
                 library: library,
@@ -591,6 +603,7 @@ fn App() -> Element {
                 queue: queue,
                 current_queue_index: current_queue_index,
                 volume: volume,
+                is_rightbar_open: is_rightbar_open,
             }
         }
     }
