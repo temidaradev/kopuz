@@ -271,9 +271,6 @@
   .top-6 {
     top: calc(var(--spacing) * 6);
   }
-  .top-8 {
-    top: calc(var(--spacing) * 8);
-  }
   .top-full {
     top: 100%;
   }
@@ -315,9 +312,6 @@
   }
   .left-6 {
     left: calc(var(--spacing) * 6);
-  }
-  .left-8 {
-    left: calc(var(--spacing) * 8);
   }
   .z-10 {
     z-index: 10;

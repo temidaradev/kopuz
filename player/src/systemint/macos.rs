@@ -15,8 +15,8 @@ use objc2_media_player::{
     MPMediaItemArtwork, MPMediaItemPropertyAlbumTitle, MPMediaItemPropertyArtist,
     MPMediaItemPropertyArtwork, MPMediaItemPropertyPlaybackDuration, MPMediaItemPropertyTitle,
     MPNowPlayingInfoCenter, MPNowPlayingInfoPropertyElapsedPlaybackTime,
-    MPNowPlayingInfoPropertyPlaybackRate, MPRemoteCommandCenter, MPRemoteCommandEvent,
-    MPRemoteCommandHandlerStatus,
+    MPNowPlayingInfoPropertyPlaybackRate, MPNowPlayingPlaybackState, MPRemoteCommandCenter,
+    MPRemoteCommandEvent, MPRemoteCommandHandlerStatus,
 };
 #[cfg(target_os = "ios")]
 use objc2_ui_kit::UIImage as NSImage;
@@ -59,6 +59,7 @@ pub fn set_background_handler(handler: impl Fn(SystemEvent) + Send + Sync + 'sta
 }
 
 fn dispatch_event(event: SystemEvent) {
+    println!("[systemint] Dispatching event: {:?}", event);
     if let Ok(guard) = get_bg_handler().lock() {
         if let Some(ref handler) = *guard {
             handler(event);
@@ -81,18 +82,19 @@ pub fn init() {
                 objc2::msg_send![process_info, beginActivityWithOptions: options, reason: &*reason];
             if !activity.is_null() {
                 let _: *mut AnyObject = objc2::msg_send![activity, retain];
-                println!("[macos] App Nap bypassed with NSProcessInfo activity");
+                println!("[systemint] App Nap bypassed with NSProcessInfo activity");
             }
         }
 
         let session = AVAudioSession::sharedInstance();
-        if let Err(e) = session.setCategory_error(AVAudioSessionCategoryPlayback.unwrap()) {
-            eprintln!("[macos] Failed to set AVAudioSession category: {:?}", e);
+        match session.setCategory_error(AVAudioSessionCategoryPlayback.unwrap()) {
+            Ok(_) => println!("[systemint] AVAudioSession category set successfully"),
+            Err(e) => eprintln!("[systemint] Failed to set AVAudioSession category: {:?}", e),
         }
-        if let Err(e) = session.setActive_error(true) {
-            eprintln!("[macos] Failed to activate AVAudioSession: {:?}", e);
-        } else {
-            println!("[macos] AVAudioSession configured for background playback");
+
+        match session.setActive_error(true) {
+            Ok(_) => println!("[systemint] AVAudioSession activated successfully"),
+            Err(e) => eprintln!("[systemint] Failed to activate AVAudioSession: {:?}", e),
         }
 
         let center = MPRemoteCommandCenter::sharedCommandCenter();
@@ -151,6 +153,10 @@ pub fn update_now_playing(
     artwork_path: Option<&str>,
 ) {
     init();
+    println!(
+        "[systemint] Updating now playing: {} - {} (playing: {})",
+        artist, title, playing
+    );
 
     static ARTWORK_CACHE: OnceLock<std::sync::Mutex<Option<(String, ThreadSafeArtwork)>>> =
         OnceLock::new();
@@ -248,5 +254,14 @@ pub fn update_now_playing(
             &NSMutableDictionary<_, _>,
             &NSDictionary<NSString, AnyObject>,
         >(&*info)));
+
+        let state = if playing {
+            MPNowPlayingPlaybackState::Playing
+        } else {
+            MPNowPlayingPlaybackState::Paused
+        };
+        center.setPlaybackState(state);
+
+        println!("[systemint] nowPlayingInfo updated in MPNowPlayingInfoCenter");
     }
 }

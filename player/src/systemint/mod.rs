@@ -8,7 +8,7 @@ pub use macos::{SystemEvent, init, set_background_handler, update_now_playing, w
 mod android;
 
 #[cfg(target_os = "android")]
-pub use android::{SystemEvent, init, set_background_handler, update_now_playing};
+pub use android::{SystemEvent, get_files_dir, init, set_background_handler, update_now_playing};
 
 #[cfg(target_os = "linux")]
 mod linux;

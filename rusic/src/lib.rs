@@ -26,17 +26,55 @@ pub fn App() -> Element {
     let mut library = use_signal(reader::Library::default);
     let mut current_route = use_signal(|| Route::Home);
     let cache_dir = use_memo(move || {
-        let path = directories::ProjectDirs::from("com", "temidaradev", "rusic")
+        #[cfg(target_os = "android")]
+        let mut path = player::systemint::get_files_dir()
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("cache");
+
+        #[cfg(target_os = "ios")]
+        let mut path = std::env::var("HOME")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|_| std::path::PathBuf::from("."))
+            .join("Library/Caches/rusic");
+
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        let mut path = directories::ProjectDirs::from("com", "temidaradev", "rusic")
             .map(|dirs| dirs.cache_dir().to_path_buf())
             .unwrap_or_else(|| std::path::Path::new("./cache").to_path_buf());
-        let _ = std::fs::create_dir_all(&path);
+
+        if let Err(e) = std::fs::create_dir_all(&path) {
+            eprintln!("[rusic] Failed to create cache dir {:?}: {}", path, e);
+            path = std::path::PathBuf::from("./cache");
+            let _ = std::fs::create_dir_all(&path);
+        }
+        println!("[rusic] Using cache dir: {:?}", path);
         path
     });
     let config_dir = use_memo(move || {
-        let path = directories::ProjectDirs::from("com", "temidaradev", "rusic")
+        #[cfg(target_os = "android")]
+        let mut path = player::systemint::get_files_dir()
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("config");
+
+        #[cfg(target_os = "ios")]
+        let mut path = std::env::var("HOME")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|_| std::path::PathBuf::from("."))
+            .join("Library/Application Support/rusic");
+
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
+        let mut path = directories::ProjectDirs::from("com", "temidaradev", "rusic")
             .map(|dirs| dirs.config_dir().to_path_buf())
             .unwrap_or_else(|| std::path::Path::new("./config").to_path_buf());
-        let _ = std::fs::create_dir_all(&path);
+
+        if let Err(e) = std::fs::create_dir_all(&path) {
+            eprintln!("[rusic] Failed to create config dir {:?}: {}", path, e);
+            path = std::path::PathBuf::from("./config");
+            let _ = std::fs::create_dir_all(&path);
+        }
+        println!("[rusic] Using config dir: {:?}", path);
         path
     });
     let lib_path = use_memo(move || cache_dir().join("library.json"));
@@ -97,9 +135,12 @@ pub fn App() -> Element {
         let config_snapshot = config.read().clone();
         let path = config_path();
         spawn(async move {
+            println!("[rusic] Saving config to {:?}", path);
             let result = tokio::task::spawn_blocking(move || config_snapshot.save(&path)).await;
             if let Ok(Err(e)) = result {
-                eprintln!("Failed to save config: {}", e);
+                eprintln!("[rusic] Failed to save config: {}", e);
+            } else {
+                println!("[rusic] Config saved successfully");
             }
         });
     });
@@ -111,9 +152,12 @@ pub fn App() -> Element {
         let store_snapshot = playlist_store.read().clone();
         let path = playlist_path();
         spawn(async move {
+            println!("[rusic] Saving playlists to {:?}", path);
             let result = tokio::task::spawn_blocking(move || store_snapshot.save(&path)).await;
             if let Ok(Err(e)) = result {
-                eprintln!("Failed to save playlists: {}", e);
+                eprintln!("[rusic] Failed to save playlists: {}", e);
+            } else {
+                println!("[rusic] Playlists saved successfully");
             }
         });
     });
@@ -125,9 +169,12 @@ pub fn App() -> Element {
         let lib_snapshot = library.read().clone();
         let path = lib_path();
         spawn(async move {
+            println!("[rusic] Saving library to {:?}", path);
             let result = tokio::task::spawn_blocking(move || lib_snapshot.save(&path)).await;
             if let Ok(Err(e)) = result {
-                eprintln!("Failed to save library: {}", e);
+                eprintln!("[rusic] Failed to save library: {}", e);
+            } else {
+                println!("[rusic] Library saved successfully");
             }
         });
     });
@@ -152,19 +199,24 @@ pub fn App() -> Element {
             );
 
             if let Ok(Ok(loaded)) = lib_res {
+                println!("[rusic] Library loaded");
                 library.set(loaded);
             }
             if let Ok(loaded) = cfg_res {
+                println!("[rusic] Config loaded");
                 config.set(loaded);
             }
             if let Ok(Ok(loaded)) = pl_res {
+                println!("[rusic] Playlists loaded");
                 playlist_store.set(loaded);
             }
             if let Ok(Ok(loaded)) = fav_res {
+                println!("[rusic] Favorites loaded");
                 favorites_store.set(loaded);
             }
 
             initial_load_done.set(true);
+            println!("[rusic] Initial load complete");
         });
     });
 
@@ -198,6 +250,7 @@ pub fn App() -> Element {
                         .retain(|a| valid_album_ids.contains(&a.id));
 
                     library.set(current_lib.clone());
+                    println!("[rusic] Saving library after rescan to {:?}", lib_path());
                     let _ = current_lib.save(&lib_path());
                 }
             }

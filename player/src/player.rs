@@ -22,6 +22,9 @@ pub struct Player {
 
 impl Player {
     pub fn new() -> Self {
+        #[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
+        systemint::init();
+
         let stream = OutputStreamBuilder::open_default_stream().expect("open default audio stream");
         let sink = Sink::connect_new(stream.mixer());
 
