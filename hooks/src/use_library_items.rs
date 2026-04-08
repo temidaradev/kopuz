@@ -54,9 +54,15 @@ pub fn use_library_items(library: Signal<Library>) -> LibraryItems {
             .collect();
 
         match *sort_order.read() {
-            SortOrder::Title => tracks.sort_by_cached_key(|(a, _)| a.title.to_lowercase()),
-            SortOrder::Artist => tracks.sort_by_cached_key(|(a, _)| a.artist.to_lowercase()),
-            SortOrder::Album => tracks.sort_by_cached_key(|(a, _)| a.album.to_lowercase()),
+            SortOrder::Title => tracks.sort_by_cached_key(|(a, _)| {
+                (a.title.to_lowercase(), a.artist.to_lowercase(), a.album.to_lowercase(), a.disc_number, a.track_number)
+            }),
+            SortOrder::Artist => tracks.sort_by_cached_key(|(a, _)| {
+                (a.artist.to_lowercase(), a.album.to_lowercase(), a.disc_number, a.track_number, a.title.to_lowercase())
+            }),
+            SortOrder::Album => tracks.sort_by_cached_key(|(a, _)| {
+                (a.album.to_lowercase(), a.disc_number, a.track_number, a.title.to_lowercase())
+            }),
         }
 
         tracks

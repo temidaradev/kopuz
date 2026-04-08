@@ -240,13 +240,13 @@ pub fn JellyfinLibrary(
         let mut tracks = library.read().jellyfin_tracks.clone();
         match *sort_order.read() {
             config::SortOrder::Title => {
-                tracks.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()))
+                tracks.sort_by_cached_key(|a| (a.title.to_lowercase(), a.artist.to_lowercase(), a.album.to_lowercase(), a.disc_number, a.track_number))
             }
             config::SortOrder::Artist => {
-                tracks.sort_by(|a, b| a.artist.to_lowercase().cmp(&b.artist.to_lowercase()))
+                tracks.sort_by_cached_key(|a| (a.artist.to_lowercase(), a.album.to_lowercase(), a.disc_number, a.track_number, a.title.to_lowercase()))
             }
             config::SortOrder::Album => {
-                tracks.sort_by(|a, b| a.album.to_lowercase().cmp(&b.album.to_lowercase()))
+                tracks.sort_by_cached_key(|a| (a.album.to_lowercase(), a.disc_number, a.track_number, a.title.to_lowercase()))
             }
         }
         let conf = config.read();
