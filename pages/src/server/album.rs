@@ -5,7 +5,7 @@ use components::track_row::TrackRow;
 use config::AppConfig;
 use dioxus::prelude::*;
 use reader::{Library, PlaylistStore};
-use server::jellyfin::JellyfinClient;
+use ::server::jellyfin::JellyfinClient;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -76,7 +76,7 @@ pub fn JellyfinAlbum(
     rsx! {
         div {
             if jellyfin_albums().is_empty() {
-                p { class: "text-slate-500", "No albums found in Jellyfin library." }
+                p { class: "text-slate-500", "No albums found in your music library." }
             } else {
                 div { class: "grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-6",
                     for (album_id_val, album_title, artist, cover_url) in jellyfin_albums() {
@@ -501,3 +501,6 @@ pub fn JellyfinAlbumDetails(
         }
     }
 }
+
+pub use JellyfinAlbum as ServerAlbum;
+pub use JellyfinAlbumDetails as ServerAlbumDetails;

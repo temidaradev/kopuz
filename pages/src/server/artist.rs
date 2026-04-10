@@ -3,7 +3,7 @@ use components::selection_bar::SelectionBar;
 use config::AppConfig;
 use dioxus::prelude::*;
 use reader::{Library, PlaylistStore};
-use server::jellyfin::JellyfinClient;
+use ::server::jellyfin::JellyfinClient;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
@@ -314,3 +314,5 @@ pub fn JellyfinArtist(
         }
     }
 }
+
+pub use JellyfinArtist as ServerArtist;

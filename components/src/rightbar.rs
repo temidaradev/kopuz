@@ -89,9 +89,9 @@ pub fn Rightbar(
         let lib = library.read();
         let conf = config.read();
 
-        let is_jellyfin_track = track.path.to_string_lossy().starts_with("jellyfin:");
+        let is_server_track = conf.active_source == config::MusicSource::Server;
 
-        if is_jellyfin_track {
+        if is_server_track {
             if let Some(server) = &conf.server {
                 let path_str = track.path.to_string_lossy();
                 return utils::jellyfin_image::jellyfin_image_url_from_path(

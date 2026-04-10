@@ -24,7 +24,7 @@ pub fn use_search_data(
         let active_source = config.read().active_source.clone();
         let lib = library.read();
 
-        if active_source == MusicSource::Jellyfin {
+        if active_source == MusicSource::Server {
             let mut genre_items = std::collections::HashMap::new();
             for album in &lib.jellyfin_albums {
                 for g in album.genre.split(|c| c == '/' || c == ';' || c == ',') {
@@ -145,7 +145,7 @@ pub fn use_search_data(
                     })
                     .collect();
             }
-            MusicSource::Jellyfin => {
+            MusicSource::Server => {
                 tracks = lib
                     .jellyfin_tracks
                     .iter()

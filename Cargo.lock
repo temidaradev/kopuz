@@ -4957,6 +4957,7 @@ dependencies = [
 name = "server"
 version = "0.3.5"
 dependencies = [
+ "config",
  "jellyfin-sdk-rust",
  "reqwest 0.12.28",
  "serde",

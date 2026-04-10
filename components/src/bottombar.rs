@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 use hooks::use_player_controller::{LoopMode, PlayerController};
 use player::player::Player;
 use reader::{FavoritesStore, Library};
+use config::MusicService;
 
 #[component]
 pub fn Bottombar(
@@ -148,19 +149,42 @@ pub fn Bottombar(
                                         };
 
                                         if let Some((url, token, user_id)) = server_config {
-                                            let remote = server::jellyfin::JellyfinClient::new(
-                                                &url,
-                                                Some(&token),
-                                                &device_id,
-                                                Some(&user_id),
-                                            );
-                                            let result = if new_fav {
-                                                remote.mark_favorite(&item_id).await
-                                            } else {
-                                                remote.unmark_favorite(&item_id).await
+                                            let service = config
+                                                .peek()
+                                                .server
+                                                .as_ref()
+                                                .map(|s| s.service)
+                                                .unwrap_or(MusicService::Jellyfin);
+
+                                            let result = match service {
+                                                MusicService::Jellyfin => {
+                                                    let remote = server::jellyfin::JellyfinClient::new(
+                                                        &url,
+                                                        Some(&token),
+                                                        &device_id,
+                                                        Some(&user_id),
+                                                    );
+                                                    if new_fav {
+                                                        remote.mark_favorite(&item_id).await
+                                                    } else {
+                                                        remote.unmark_favorite(&item_id).await
+                                                    }
+                                                }
+                                                MusicService::Subsonic | MusicService::Custom => {
+                                                    let remote = server::subsonic::SubsonicClient::new(
+                                                        &url,
+                                                        &user_id,
+                                                        &token,
+                                                    );
+                                                    if new_fav {
+                                                        remote.star(&item_id).await
+                                                    } else {
+                                                        remote.unstar(&item_id).await
+                                                    }
+                                                }
                                             };
                                             if let Err(e) = result {
-                                                eprintln!("Failed to sync favorite to Jellyfin: {e}");
+                                                eprintln!("Failed to sync favorite to server: {e}");
                                                 favorites_store.write().set_jellyfin(item_id, !new_fav);
                                             }
                                         }

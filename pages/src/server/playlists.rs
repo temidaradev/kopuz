@@ -1,7 +1,8 @@
-use config::AppConfig;
+use ::server::jellyfin::JellyfinClient;
+use ::server::subsonic::SubsonicClient;
+use config::{AppConfig, MusicService};
 use dioxus::prelude::*;
 use reader::{Library, PlaylistStore};
-use server::jellyfin::JellyfinClient;
 
 #[component]
 pub fn JellyfinPlaylists(
@@ -23,7 +24,12 @@ pub fn JellyfinPlaylists(
                             (&server.access_token, &server.user_id)
                         {
                             (
-                                Some((server.url.clone(), token.clone(), user_id.clone())),
+                                Some((
+                                    server.service,
+                                    server.url.clone(),
+                                    token.clone(),
+                                    user_id.clone(),
+                                )),
                                 conf.device_id.clone(),
                             )
                         } else {
@@ -34,31 +40,56 @@ pub fn JellyfinPlaylists(
                     }
                 };
 
-                if let Some((url, token, user_id)) = server_config {
-                    let remote =
-                        JellyfinClient::new(&url, Some(&token), &device_id, Some(&user_id));
-                    if let Ok(playlists) = remote.get_playlists().await {
-                        let mut jelly_playlists = Vec::new();
-                        for p in playlists {
-                            if let Ok(items) = remote.get_playlist_items(&p.id).await {
-                                let tracks: Vec<String> =
-                                    items.into_iter().map(|item| item.id).collect();
-                                jelly_playlists.push(reader::models::JellyfinPlaylist {
-                                    id: p.id.clone(),
-                                    name: p.name.clone(),
-                                    tracks,
-                                });
-                            } else {
-                                jelly_playlists.push(reader::models::JellyfinPlaylist {
-                                    id: p.id.clone(),
-                                    name: p.name.clone(),
-                                    tracks: vec![],
-                                });
+                if let Some((service, url, token, user_id)) = server_config {
+                    let mut jelly_playlists = Vec::new();
+
+                    match service {
+                        MusicService::Jellyfin => {
+                            let remote =
+                                JellyfinClient::new(&url, Some(&token), &device_id, Some(&user_id));
+                            if let Ok(playlists) = remote.get_playlists().await {
+                                for p in playlists {
+                                    if let Ok(items) = remote.get_playlist_items(&p.id).await {
+                                        let tracks: Vec<String> =
+                                            items.into_iter().map(|item| item.id).collect();
+                                        jelly_playlists.push(reader::models::JellyfinPlaylist {
+                                            id: p.id.clone(),
+                                            name: p.name.clone(),
+                                            tracks,
+                                        });
+                                    } else {
+                                        jelly_playlists.push(reader::models::JellyfinPlaylist {
+                                            id: p.id.clone(),
+                                            name: p.name.clone(),
+                                            tracks: vec![],
+                                        });
+                                    }
+                                }
                             }
                         }
-                        let mut store_write = playlist_store.write();
-                        store_write.jellyfin_playlists = jelly_playlists;
+                        MusicService::Subsonic | MusicService::Custom => {
+                            let remote = SubsonicClient::new(&url, &user_id, &token);
+                            if let Ok(playlists) = remote.get_playlists().await {
+                                for p in playlists {
+                                    let tracks = remote
+                                        .get_playlist_entries(&p.id)
+                                        .await
+                                        .unwrap_or_default()
+                                        .into_iter()
+                                        .map(|song| song.id)
+                                        .collect();
+                                    jelly_playlists.push(reader::models::JellyfinPlaylist {
+                                        id: p.id,
+                                        name: p.name,
+                                        tracks,
+                                    });
+                                }
+                            }
+                        }
                     }
+
+                    let mut store_write = playlist_store.write();
+                    store_write.jellyfin_playlists = jelly_playlists;
                 }
             });
         }
@@ -71,7 +102,7 @@ pub fn JellyfinPlaylists(
             if store.jellyfin_playlists.is_empty() {
                 div { class: "flex flex-col items-center justify-center h-64 text-slate-500",
                     i { class: "fa-regular fa-folder-open text-4xl mb-4 opacity-50" }
-                    p { "No Jellyfin playlists found." }
+                    p { "No playlists found." }
                 }
             } else {
                 div { class: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6",
@@ -126,7 +157,7 @@ pub fn JellyfinPlaylists(
                                     }
                                 }
                                 h3 { class: "text-xl font-bold text-white mb-1 truncate", "{playlist.name}" }
-                                p { class: "text-sm text-slate-400", "Jellyfin • {playlist.tracks.len()} tracks" }
+                                p { class: "text-sm text-slate-400", "Server • {playlist.tracks.len()} tracks" }
                             }
                         }
                     })}
@@ -135,3 +166,5 @@ pub fn JellyfinPlaylists(
         }
     }
 }
+
+pub use JellyfinPlaylists as ServerPlaylists;
