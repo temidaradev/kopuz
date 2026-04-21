@@ -14,7 +14,7 @@ uuid = { workspace = true }
 player = { workspace = true }
 reader = { workspace = true }
 utils = { workspace = true }
-rusic_route = { workspace = true }
+kopuz_route = { workspace = true }
 config = { workspace = true }
 rfd = { workspace = true }
 hooks = { workspace = true }

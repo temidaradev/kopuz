@@ -41,7 +41,7 @@ pub async fn fetch_lyrics(artist: &str, title: &str, album: &str, duration: u64)
     let client = reqwest::Client::new();
     let res = client
         .get(&url)
-        .header("User-Agent", "rusic/0.3.3")
+        .header("User-Agent", "kopuz/0.3.3")
         .send()
         .await
         .ok()?;
@@ -61,7 +61,7 @@ pub async fn fetch_lyrics(artist: &str, title: &str, album: &str, duration: u64)
     );
     let search_res = client
         .get(&search_url)
-        .header("User-Agent", "rusic/0.3.3")
+        .header("User-Agent", "kopuz/0.3.3")
         .send()
         .await
         .ok()?;

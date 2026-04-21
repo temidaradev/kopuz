@@ -275,7 +275,7 @@ impl PlayerController {
                                             let temp_dir = std::env::temp_dir();
                                             let random_id: u64 = rand::random();
                                             let file_path = temp_dir
-                                                .join(format!("rusic_cover_{}.jpg", random_id));
+                                                .join(format!("kopuz_cover_{}.jpg", random_id));
 
                                             if tokio::fs::write(&file_path, bytes).await.is_ok() {
                                                 if *play_generation.read() == current_gen {

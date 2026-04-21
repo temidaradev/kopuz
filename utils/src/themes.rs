@@ -36,7 +36,7 @@ impl Theme {
         self.vars.get(key).map(String::as_str)
     }
 
-    // Maps values back to the css custom properties Rusic uses.
+    // Maps values back to the css custom properties Kopuz uses.
     pub fn to_css(&self) -> String {
         let mut out = format!(".theme-{} {{\n", self.id);
         for (purpose, css_var) in VAR_MAP {
@@ -63,7 +63,7 @@ struct ThemeFile {
 }
 
 pub fn load_themes() -> Vec<Theme> {
-    let path = std::env::var("RUSIC_THEMES_PATH")
+    let path = std::env::var("KOPUZ_THEMES_PATH")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| {
             std::env::current_exe()

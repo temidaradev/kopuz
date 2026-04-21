@@ -2,7 +2,7 @@ use config::MusicSource;
 use dioxus::prelude::*;
 #[cfg(all(not(target_arch = "wasm32"), target_os = "macos"))]
 use dioxus::desktop::use_window;
-use rusic_route::Route;
+use kopuz_route::Route;
 
 #[derive(PartialEq, Clone)]
 struct SidebarItem {
@@ -159,7 +159,7 @@ pub fn Sidebar(props: SidebarProps) -> Element {
                     h2 {
                         class: "text-lg font-bold tracking-widest text-white/90 uppercase",
                         style: "font-family: 'JetBrains Mono', monospace;",
-                        "RUSIC"
+                        "KOPUZ"
                     }
                 }
 

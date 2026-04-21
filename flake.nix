@@ -1,5 +1,5 @@
 {
-  description = "Rusic - A modern music player";
+  description = "Kopuz - A modern music player";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -80,7 +80,7 @@
 
         apps.default = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/rusic";
+          program = "${self.packages.${system}.default}/bin/kopuz";
         };
       }
     );

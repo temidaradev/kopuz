@@ -5,15 +5,15 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>English</string>
     <key>CFBundleExecutable</key>
-    <string>rusic</string>
+    <string>kopuz</string>
     <key>CFBundleIdentifier</key>
-    <string>com.temidaradev.rusic</string>
+    <string>com.temidaradev.kopuz</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>rusic</string>
+    <string>kopuz</string>
     <key>CFBundleIconFile</key>
-    <string>Rusic</string>
+    <string>Kopuz</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

@@ -18,7 +18,7 @@ hooks = { workspace = true }
 config = { workspace = true }
 rfd = { workspace = true }
 utils = { workspace = true }
-rusic_route = { workspace = true }
+kopuz_route = { workspace = true }
 server = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }

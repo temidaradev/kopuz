@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.temidaradev.rusic</id>
+  <id>com.temidaradev.kopuz</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
-  <name>Rusic</name>
+  <name>Kopuz</name>
   <summary>A modern, gud music player</summary>
 
   <developer id="com.temidaradev">
@@ -12,7 +12,7 @@
 
   <description>
     <p>
-      Rusic is a fast, modern music player built with Rust and the Dioxus framework.
+      Kopuz is a fast, modern music player built with Rust and the Dioxus framework.
       It scans your local music folders and organizes them into a browsable library
       by artist and album. Features include full playback controls, an immersive
       fullscreen player, dynamic theming, and system media integration. And also
@@ -23,7 +23,7 @@
     </p>
   </description>
 
-  <launchable type="desktop-id">com.temidaradev.rusic.desktop</launchable>
+  <launchable type="desktop-id">com.temidaradev.kopuz.desktop</launchable>
 
   <screenshots>
     <screenshot type="default">
@@ -32,8 +32,8 @@
     </screenshot>
   </screenshots>
 
-  <url type="homepage">https://github.com/temidaradev/rusic</url>
-  <url type="bugtracker">https://github.com/temidaradev/rusic/issues</url>
+  <url type="homepage">https://github.com/temidaradev/kopuz</url>
+  <url type="bugtracker">https://github.com/temidaradev/kopuz/issues</url>
 
   <content_rating type="oars-1.1" />
 
@@ -57,6 +57,6 @@
   </releases>
 
   <provides>
-    <binary>rusic</binary>
+    <binary>kopuz</binary>
   </provides>
 </component>

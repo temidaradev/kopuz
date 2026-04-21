@@ -25,10 +25,10 @@ jobs:
 
       - uses: cachix/cachix-action@v14
         with:
-          name: rusic
+          name: kopuz
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Build package
         run: |
           nix build .#packages.${{ matrix.system }}.default
-          cachix push rusic result
+          cachix push kopuz result

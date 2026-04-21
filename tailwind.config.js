@@ -2,7 +2,7 @@
 module.exports = {
   mode: "all",
   content: [
-    "./rusic/**/*.{rs,html,css}",
+    "./kopuz/**/*.{rs,html,css}",
     "./components/**/*.{rs,html,css}",
     "./pages/**/*.{rs,html,css}",
     "./hooks/**/*.{rs,html,css}",
@@ -11,7 +11,7 @@ module.exports = {
     "./server/**/*.{rs,html,css}",
     "./utils/**/*.{rs,html,css}",
     "./config/**/*.{rs,html,css}",
-    "./rusic_route/**/*.{rs,html,css}",
+    "./kopuz_route/**/*.{rs,html,css}",
   ],
   theme: {
     extend: {

@@ -1,11 +1,11 @@
 [Unit]
-Description=Rusic web bundle static server
+Description=Kopuz web bundle static server
 After=network.target
 Wants=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/mnt/musics/rusic/target/dx/rusic/release/web/public
+WorkingDirectory=/mnt/musics/kopuz/target/dx/kopuz/release/web/public
 ExecStart=/usr/bin/python3 -m http.server 8080 --bind 0.0.0.0
 Restart=on-failure
 RestartSec=3

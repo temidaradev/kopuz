@@ -1,9 +1,9 @@
 {
-    "app-id": "com.temidaradev.rusic",
+    "app-id": "com.temidaradev.kopuz",
     "runtime": "org.gnome.Platform",
     "runtime-version": "49",
     "sdk": "org.gnome.Sdk",
-    "command": "rusic",
+    "command": "kopuz",
     "finish-args": [
         "--share=ipc",
         "--socket=x11",
@@ -16,7 +16,7 @@
         "--filesystem=xdg-run/discord-ipc-0",
         "--talk-name=org.freedesktop.Notifications",
         "--talk-name=org.mpris.MediaPlayer2.*",
-        "--own-name=org.mpris.MediaPlayer2.rusic",
+        "--own-name=org.mpris.MediaPlayer2.kopuz",
         "--env=LD_LIBRARY_PATH=/app/lib"
     ],
     "modules": [
@@ -36,38 +36,38 @@
             ]
         },
         {
-            "name": "rusic",
+            "name": "kopuz",
             "buildsystem": "simple",
             "build-commands": [
-                "install -Dm755 rusic /app/bin/rusic",
+                "install -Dm755 kopuz /app/bin/kopuz",
                 "mkdir -p /app/bin/assets",
                 "cp -r assets/* /app/bin/assets/",
-                "install -Dm644 com.temidaradev.rusic.desktop -t /app/share/applications/",
-                "install -Dm644 com.temidaradev.rusic.metainfo.xml -t /app/share/metainfo/",
-                "install -Dm644 logo.png /app/share/icons/hicolor/512x512/apps/com.temidaradev.rusic.png",
-                "install -Dm644 logo.png /app/share/icons/hicolor/128x128/apps/com.temidaradev.rusic.png"
+                "install -Dm644 com.temidaradev.kopuz.desktop -t /app/share/applications/",
+                "install -Dm644 com.temidaradev.kopuz.metainfo.xml -t /app/share/metainfo/",
+                "install -Dm644 logo.png /app/share/icons/hicolor/512x512/apps/com.temidaradev.kopuz.png",
+                "install -Dm644 logo.png /app/share/icons/hicolor/128x128/apps/com.temidaradev.kopuz.png"
             ],
             "sources": [
                 {
                     "type": "file",
-                    "path": "target/dx/rusic/release/linux/app/rusic"
+                    "path": "target/dx/kopuz/release/linux/app/kopuz"
                 },
                 {
                     "type": "dir",
-                    "path": "target/dx/rusic/release/linux/app/assets",
+                    "path": "target/dx/kopuz/release/linux/app/assets",
                     "dest": "assets"
                 },
                 {
                     "type": "file",
-                    "path": "data/com.temidaradev.rusic.desktop"
+                    "path": "data/com.temidaradev.kopuz.desktop"
                 },
                 {
                     "type": "file",
-                    "path": "data/com.temidaradev.rusic.metainfo.xml"
+                    "path": "data/com.temidaradev.kopuz.metainfo.xml"
                 },
                 {
                     "type": "file",
-                    "path": "rusic/assets/logo.png"
+                    "path": "kopuz/assets/logo.png"
                 }
             ]
         }

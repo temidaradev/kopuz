@@ -92,7 +92,7 @@ fn create_message_window() -> Option<HWND> {
         CreateWindowExW(
             WINDOW_EX_STYLE::default(),
             w!("STATIC"),
-            w!("RusicSMTC"),
+            w!("KopuzSMTC"),
             WINDOW_STYLE::default(),
             0,
             0,

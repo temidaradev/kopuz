@@ -1,15 +1,15 @@
-# Rusic
+# Kopuz
 
-Rusic is a modern, lightweight, music player application built with Rust and the Dioxus framework. It provides a clean and responsive interface for managing and enjoying your local music collection.
+Kopuz is a modern, lightweight, music player application built with Rust and the Dioxus framework. It provides a clean and responsive interface for managing and enjoying your local music collection.
 
 [![Discord](https://img.shields.io/badge/Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/K6Bmzw2E4M)
 ![Rust](https://img.shields.io/badge/Rust-000000?style=flat&logo=rust&logoColor=white)
 
-![Rusic](https://github.com/user-attachments/assets/15d4942d-e9a0-404f-ad38-f292d224eaf1)
+![Kopuz](https://github.com/user-attachments/assets/15d4942d-e9a0-404f-ad38-f292d224eaf1)
 
 ## Overview
 
-Rusic allows you to scan your local directories for audio files, or you jellyfin library, automatically organizing them into a browsable library. You can navigate by artists, albums, or explore your custom playlists. The application is built for performance and desktop integration, utilizing the power of Rust.
+Kopuz allows you to scan your local directories for audio files, or you jellyfin library, automatically organizing them into a browsable library. You can navigate by artists, albums, or explore your custom playlists. The application is built for performance and desktop integration, utilizing the power of Rust.
 
 ## Features
 
@@ -29,21 +29,21 @@ Rusic allows you to scan your local directories for audio files, or you jellyfin
 **Run directly without installing:**
 
 ```bash
-nix run github:temidaradev/rusic
+nix run github:temidaradev/kopuz
 ```
 
 **Install to your profile:**
 
 ```bash
-nix profile add github:temidaradev/rusic
+nix profile add github:temidaradev/kopuz
 ```
 
 **NixOS flake (recommended — installs as a proper system app with icon & `.desktop` entry):**
 
-Add rusic to your `flake.nix` inputs:
+Add kopuz to your `flake.nix` inputs:
 
 ```nix
-inputs.rusic.url = "github:temidaradev/rusic";
+inputs.kopuz.url = "github:temidaradev/kopuz";
 ```
 
 Pass it through to your system config and add the Cachix substituter so it downloads the pre-built binary instead of compiling:
@@ -51,10 +51,10 @@ Pass it through to your system config and add the Cachix substituter so it downl
 ```nix
 # nixos/nix/default.nix
 nix.settings = {
-  substituters      = [ "https://cache.nixos.org" "https://rusic.cachix.org" ];
+  substituters      = [ "https://cache.nixos.org" "https://kopuz.cachix.org" ];
   trusted-public-keys = [
     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-    "rusic.cachix.org-1:WXMpGpamblLUiJtcoxBxGGGGwIcWxGPJBUxarLiqWmw="
+    "kopuz.cachix.org-1:WXMpGpamblLUiJtcoxBxGGGGwIcWxGPJBUxarLiqWmw="
   ];
 };
 ```
@@ -64,20 +64,20 @@ Then install the package:
 ```nix
 # configuration.nix || machine.nix
 environment.systemPackages = [
-  rusic.packages.${system}.default
+  kopuz.packages.${system}.default
 ];
 ```
 
 
 ### Flatpak (Recommended)
 
-Rusic is soon available on Flathub. To install from source manifest:
+Kopuz is soon available on Flathub. To install from source manifest:
 
 ```bash
-git clone https://github.com/temidaradev/rusic
-cd rusic
-flatpak-builder --user --install --force-clean build-dir com.temidaradev.rusic.json
-flatpak run com.temidaradev.rusic
+git clone https://github.com/temidaradev/kopuz
+cd kopuz
+flatpak-builder --user --install --force-clean build-dir com.temidaradev.kopuz.json
+flatpak run com.temidaradev.kopuz
 ```
 
 You can also click on the file and open it with an app provider, for example KDE discover
@@ -85,10 +85,10 @@ You can also click on the file and open it with an app provider, for example KDE
 ### Build from Source
 
 ```bash
-git clone https://github.com/temidaradev/rusic
-cd rusic
+git clone https://github.com/temidaradev/kopuz
+cd kopuz
 npm install
-dx serve --package rusic
+dx serve --package kopuz
 ```
 
 ### macOS
@@ -96,23 +96,23 @@ dx serve --package rusic
 **Quarantine note:** If you downloaded a `.dmg` instead, macOS may block it. Run once to clear the quarantine flag:
 
 ```bash
-xattr -d com.apple.quarantine /Applications/Rusic.app
+xattr -d com.apple.quarantine /Applications/Kopuz.app
 ```
 
 
-### Where does Rusic keep its files?
+### Where does Kopuz keep its files?
 
 On **macOS** everything lives under your Library folders:
-- `~/Library/Application Support/com.temidaradev.rusic/config.json` — your settings
-- `~/Library/Caches/com.temidaradev.rusic/library.json` — the scanned library
-- `~/Library/Caches/com.temidaradev.rusic/playlists.json` — your playlists
-- `~/Library/Caches/com.temidaradev.rusic/covers/` — cached album art
+- `~/Library/Application Support/com.temidaradev.kopuz/config.json` — your settings
+- `~/Library/Caches/com.temidaradev.kopuz/library.json` — the scanned library
+- `~/Library/Caches/com.temidaradev.kopuz/playlists.json` — your playlists
+- `~/Library/Caches/com.temidaradev.kopuz/covers/` — cached album art
 
 On **Linux** it follows the XDG spec like you'd expect:
-- `~/.config/rusic/config.json` — your settings
-- `~/.cache/rusic/library.json` — the scanned library
-- `~/.cache/rusic/playlists.json` — your playlists
-- `~/.cache/rusic/covers/` — cached album art
+- `~/.config/kopuz/config.json` — your settings
+- `~/.cache/kopuz/library.json` — the scanned library
+- `~/.cache/kopuz/playlists.json` — your playlists
+- `~/.cache/kopuz/covers/` — cached album art
 
 If covers aren't showing or the library looks off, just delete the cache folder and hit rescan.
 
@@ -122,13 +122,13 @@ Scrobbling functionality is only available through MusicBrainz (for now). To ena
 
 ## Optimization
 
-rusic is built to feel snappy even with large libraries. here's what we do under the hood:
+kopuz is built to feel snappy even with large libraries. here's what we do under the hood:
 
 **skip what's already indexed** — the scanner keeps a `HashSet` of every path it's already seen, so rescans only process new files. if you have 10k tracks and add 5 new ones, it won't re-read the other 9995. makes a huge difference on HDDs especially.
 
 **parallel startup loading** — on launch, library, config, playlists, and favorites all load in parallel with `tokio::join!`. before this, everything loaded sequentially and you'd stare at a blank window for a bit. now it's near-instant.
 
-**album art caching** — cover images get extracted once and saved to disk (`~/.cache/rusic/covers/` on linux, `~/Library/Caches/` on mac). we also cache the macOS now-playing artwork object in memory so it doesn't re-decode the image every time the progress bar updates.
+**album art caching** — cover images get extracted once and saved to disk (`~/.cache/kopuz/covers/` on linux, `~/Library/Caches/` on mac). we also cache the macOS now-playing artwork object in memory so it doesn't re-decode the image every time the progress bar updates.
 
 **lazy loading images** — album covers in search results, track rows, and genre views all use `loading="lazy"` so we're not loading hundreds of images at once when you scroll through a big library.
 
@@ -157,4 +157,4 @@ overall these changes brought the rescan time down significantly and the app fee
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=temidaradev/rusic&type=date&legend=top-left)](https://www.star-history.com/#temidaradev/rusic&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=temidaradev/kopuz&type=date&legend=top-left)](https://www.star-history.com/#temidaradev/kopuz&type=date&legend=top-left)

@@ -1,12 +1,12 @@
 [application]
-name = "rusic"
+name = "kopuz"
 default_platform = "desktop"
 
 [application.assets]
-base_path = "rusic/assets"
+base_path = "kopuz/assets"
 
 [bundle]
-identifier = "com.temidaradev.rusic"
+identifier = "com.temidaradev.kopuz"
 publisher = "temidaradev"
 icon = ["assets/logo.png"]
 category = "public.app-category.music"
@@ -16,7 +16,7 @@ targets = ["macos", "dmg"]
 info_plist_path = "Info.plist"
 
 [web.app]
-title = "rusic"
+title = "kopuz"
 
 [web.resource]
 style = []

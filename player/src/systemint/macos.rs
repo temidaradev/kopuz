@@ -125,7 +125,7 @@ pub fn init() {
     ONCE.get_or_init(|| unsafe {
         use objc2::ClassType;
         let process_info: *mut AnyObject = objc2::msg_send![NSProcessInfo::class(), processInfo];
-        let reason = NSString::from_str("Rusic Background Audio Playback");
+        let reason = NSString::from_str("Kopuz Background Audio Playback");
         let options: u64 = 0x00FFFFFF | 0xFF00000000;
         let activity: *mut AnyObject =
             objc2::msg_send![process_info, beginActivityWithOptions: options, reason: &*reason];
@@ -135,7 +135,7 @@ pub fn init() {
         }
 
         let assertion_type = NSString::from_str("NoIdleSleepAssertion");
-        let assertion_reason = NSString::from_str("Rusic is playing audio");
+        let assertion_reason = NSString::from_str("Kopuz is playing audio");
         let mut assertion_id: IOPMAssertionID = 0;
         let kr = IOPMAssertionCreateWithName(
             std::mem::transmute::<&objc2_foundation::NSString, *const std::ffi::c_void>(

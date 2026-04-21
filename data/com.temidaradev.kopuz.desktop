@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name=Rusic
+Name=Kopuz
 Comment=A modern music player
-Exec=rusic
-Icon=com.temidaradev.rusic
+Exec=kopuz
+Icon=com.temidaradev.kopuz
 Terminal=false
 Type=Application
 Categories=AudioVideo;Audio;Player;Music;
 Keywords=Music;Player;
-StartupWMClass=rusic
+StartupWMClass=kopuz

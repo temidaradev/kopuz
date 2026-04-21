@@ -1,10 +1,10 @@
 [package]
-name = "rusic"
+name = "kopuz"
 version = "0.4.0"
 edition = "2024"
 
 [package.metadata.bundle]
-identifier = "com.temidaradev.rusic"
+identifier = "com.temidaradev.kopuz"
 icon = ["../assets/logo.png"]
 category = "public.app-category.music"
 
@@ -29,7 +29,7 @@ components = { workspace = true }
 reader = { workspace = true }
 config = { workspace = true }
 pages = { workspace = true }
-rusic_route = { workspace = true }
+kopuz_route = { workspace = true }
 rust-i18n = { workspace = true }
 tokio = { workspace = true }
 http = { workspace = true }

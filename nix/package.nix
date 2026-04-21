@@ -20,8 +20,8 @@
 }:
 
 rustPlatform.buildRustPackage {
-  pname = "rusic";
-  version = (builtins.fromTOML (builtins.readFile ../rusic/Cargo.toml)).package.version;
+  pname = "kopuz";
+  version = (builtins.fromTOML (builtins.readFile ../kopuz/Cargo.toml)).package.version;
 
   inherit src;
 
@@ -54,7 +54,7 @@ rustPlatform.buildRustPackage {
   buildPhase = ''
     runHook preBuild
 
-    tailwindcss -i tailwind.css -o rusic/assets/tailwind.css --minify
+    tailwindcss -i tailwind.css -o kopuz/assets/tailwind.css --minify
 
     ${lib.optionalString stdenv.isDarwin ''
       mkdir -p "$TMPDIR/fake-bin"
@@ -66,7 +66,7 @@ CODESIGN_EOF
       export PATH="$TMPDIR/fake-bin:$PATH"
     ''}
 
-    dx build --release --platform desktop -p rusic --offline --frozen
+    dx build --release --platform desktop -p kopuz --offline --frozen
 
     runHook postBuild
   '';
@@ -77,24 +77,24 @@ CODESIGN_EOF
     mkdir -p $out/bin
 
     ${if stdenv.isLinux then ''
-      cp -r target/dx/rusic/release/linux/app/* $out/bin/
+      cp -r target/dx/kopuz/release/linux/app/* $out/bin/
 
-      install -Dm644 data/com.temidaradev.rusic.desktop \
-        $out/share/applications/com.temidaradev.rusic.desktop
-      substituteInPlace $out/share/applications/com.temidaradev.rusic.desktop \
-        --replace-fail "Exec=rusic" "Exec=$out/bin/rusic"
+      install -Dm644 data/com.temidaradev.kopuz.desktop \
+        $out/share/applications/com.temidaradev.kopuz.desktop
+      substituteInPlace $out/share/applications/com.temidaradev.kopuz.desktop \
+        --replace-fail "Exec=kopuz" "Exec=$out/bin/kopuz"
 
-      install -Dm644 data/com.temidaradev.rusic.metainfo.xml \
-        $out/share/metainfo/com.temidaradev.rusic.metainfo.xml
+      install -Dm644 data/com.temidaradev.kopuz.metainfo.xml \
+        $out/share/metainfo/com.temidaradev.kopuz.metainfo.xml
 
-      install -Dm644 rusic/assets/logo.png \
-        $out/share/icons/hicolor/256x256/apps/com.temidaradev.rusic.png
+      install -Dm644 kopuz/assets/logo.png \
+        $out/share/icons/hicolor/256x256/apps/com.temidaradev.kopuz.png
     '' else ''
-      # Dioxus outputs the bundle at macos/Rusic.app (capitalised, no app/ subdir)
-      cp -r target/dx/rusic/release/macos/Rusic.app $out/bin/rusic.app
+      # Dioxus outputs the bundle at macos/Kopuz.app (capitalised, no app/ subdir)
+      cp -r target/dx/kopuz/release/macos/Kopuz.app $out/bin/kopuz.app
       # Symlink whatever binary dioxus placed in MacOS/ (name may differ in case)
-      macBin=$(find $out/bin/rusic.app/Contents/MacOS -maxdepth 1 -type f | head -1)
-      ln -s "$macBin" $out/bin/rusic
+      macBin=$(find $out/bin/kopuz.app/Contents/MacOS -maxdepth 1 -type f | head -1)
+      ln -s "$macBin" $out/bin/kopuz
     ''}
 
     runHook postInstall
@@ -105,9 +105,9 @@ CODESIGN_EOF
   '';
 
   meta = with lib; {
-    description = "Rusic - A modern music player";
+    description = "Kopuz - A modern music player";
     license = licenses.mit;
     platforms = platforms.linux ++ platforms.darwin;
-    mainProgram = "rusic";
+    mainProgram = "kopuz";
   };
 }

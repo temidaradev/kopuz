@@ -11,7 +11,7 @@ use dioxus::prelude::*;
 use discord_presence::Presence;
 use player::player::Player;
 use reader::FavoritesStore;
-use rusic_route::Route;
+use kopuz_route::Route;
 #[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 #[cfg(target_arch = "wasm32")]
@@ -56,7 +56,7 @@ fn main() {
         }
 
         let mut window = dioxus::desktop::WindowBuilder::new()
-            .with_title("Rusic")
+            .with_title("Kopuz")
             .with_resizable(true)
             .with_inner_size(LogicalSize::new(1350.0, 800.0));
 
@@ -164,7 +164,7 @@ fn App() -> Element {
     let cache_dir = use_memo(move || {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let path = directories::ProjectDirs::from("com", "temidaradev", "rusic")
+            let path = directories::ProjectDirs::from("com", "temidaradev", "kopuz")
                 .map(|dirs| dirs.cache_dir().to_path_buf())
                 .unwrap_or_else(|| std::path::Path::new("./cache").to_path_buf());
             let _ = std::fs::create_dir_all(&path);
@@ -176,7 +176,7 @@ fn App() -> Element {
     let config_dir = use_memo(move || {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            let path = directories::ProjectDirs::from("com", "temidaradev", "rusic")
+            let path = directories::ProjectDirs::from("com", "temidaradev", "kopuz")
                 .map(|dirs| dirs.config_dir().to_path_buf())
                 .unwrap_or_else(|| std::path::Path::new("./config").to_path_buf());
             let _ = std::fs::create_dir_all(&path);

@@ -707,11 +707,11 @@ dependencies = [
  "config",
  "dioxus",
  "hooks",
+ "kopuz_route",
  "player",
  "rand 0.8.5",
  "reader",
  "rfd",
- "rusic_route",
  "rust-i18n",
  "serde_json",
  "server",
@@ -3267,6 +3267,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "kopuz"
+version = "0.4.0"
+dependencies = [
+ "base64 0.22.1",
+ "block2",
+ "components",
+ "config",
+ "dioxus",
+ "directories",
+ "discord-presence",
+ "discord-rich-presence",
+ "getrandom 0.2.17",
+ "hooks",
+ "http 1.4.0",
+ "kopuz_route",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "objc2-media-player",
+ "pages",
+ "percent-encoding",
+ "player",
+ "rand 0.8.5",
+ "reader",
+ "rust-i18n",
+ "serde_json",
+ "tokio",
+ "urlencoding",
+ "utils",
+ "uuid 1.20.0",
+ "web-sys",
+]
+
+[[package]]
+name = "kopuz_route"
+version = "0.3.6"
+
+[[package]]
 name = "kuchikiki"
 version = "0.8.8-speedreader"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4317,12 +4355,12 @@ dependencies = [
  "config",
  "dioxus",
  "hooks",
+ "kopuz_route",
  "player",
  "rand 0.8.5",
  "reader",
  "reqwest 0.12.28",
  "rfd",
- "rusic_route",
  "rust-i18n",
  "server",
  "tokio",
@@ -5281,44 +5319,6 @@ dependencies = [
  "untrusted",
  "windows-sys 0.52.0",
 ]
-
-[[package]]
-name = "rusic"
-version = "0.4.0"
-dependencies = [
- "base64 0.22.1",
- "block2",
- "components",
- "config",
- "dioxus",
- "directories",
- "discord-presence",
- "discord-rich-presence",
- "getrandom 0.2.17",
- "hooks",
- "http 1.4.0",
- "objc2",
- "objc2-app-kit",
- "objc2-foundation",
- "objc2-media-player",
- "pages",
- "percent-encoding",
- "player",
- "rand 0.8.5",
- "reader",
- "rusic_route",
- "rust-i18n",
- "serde_json",
- "tokio",
- "urlencoding",
- "utils",
- "uuid 1.20.0",
- "web-sys",
-]
-
-[[package]]
-name = "rusic_route"
-version = "0.3.6"
 
 [[package]]
 name = "rust-i18n"

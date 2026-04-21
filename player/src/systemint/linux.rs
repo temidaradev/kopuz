@@ -63,10 +63,10 @@ impl RootInterface for P {
         Ok(false)
     }
     async fn identity(&self) -> fdo::Result<String> {
-        Ok("Rusic".into())
+        Ok("Kopuz".into())
     }
     async fn desktop_entry(&self) -> fdo::Result<String> {
-        Ok("rusic".into())
+        Ok("kopuz".into())
     }
     async fn supported_uri_schemes(&self) -> fdo::Result<Vec<String>> {
         Ok(vec![])
@@ -185,7 +185,7 @@ fn setup() {
                 .build()
                 .unwrap()
                 .block_on(async {
-                    if let Ok(srv) = Server::new("rusic", P(st.clone(), tx())).await {
+                    if let Ok(srv) = Server::new("kopuz", P(st.clone(), tx())).await {
                         while nrx.recv().await.is_some() {
                             if let Ok(s) = st.lock() {
                                 srv.properties_changed([

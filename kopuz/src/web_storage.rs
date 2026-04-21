@@ -1,18 +1,18 @@
 #[cfg(target_arch = "wasm32")]
 use reader::FavoritesStore;
 #[cfg(target_arch = "wasm32")]
-use rusic_route::Route;
+use kopuz_route::Route;
 
 #[cfg(target_arch = "wasm32")]
-const WEB_CONFIG_STORAGE_KEY: &str = "rusic.config.v1";
+const WEB_CONFIG_STORAGE_KEY: &str = "kopuz.config.v1";
 #[cfg(target_arch = "wasm32")]
-const WEB_UI_STATE_STORAGE_KEY: &str = "rusic.ui-state.v1";
+const WEB_UI_STATE_STORAGE_KEY: &str = "kopuz.ui-state.v1";
 #[cfg(target_arch = "wasm32")]
-const WEB_LIBRARY_STORAGE_KEY: &str = "rusic.library.v1";
+const WEB_LIBRARY_STORAGE_KEY: &str = "kopuz.library.v1";
 #[cfg(target_arch = "wasm32")]
-const WEB_PLAYLISTS_STORAGE_KEY: &str = "rusic.playlists.v1";
+const WEB_PLAYLISTS_STORAGE_KEY: &str = "kopuz.playlists.v1";
 #[cfg(target_arch = "wasm32")]
-const WEB_FAVORITES_STORAGE_KEY: &str = "rusic.favorites.v1";
+const WEB_FAVORITES_STORAGE_KEY: &str = "kopuz.favorites.v1";
 
 #[cfg(target_arch = "wasm32")]
 fn route_to_storage(route: Route) -> &'static str {

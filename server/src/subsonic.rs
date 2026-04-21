@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
 const SUBSONIC_API_VERSION: &str = "1.16.1";
-const CLIENT_NAME: &str = "rusic";
+const CLIENT_NAME: &str = "kopuz";
 
 #[derive(Debug, Deserialize)]
 struct SubsonicEnvelope<T> {

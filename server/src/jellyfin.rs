@@ -209,7 +209,7 @@ impl JellyfinClient {
     fn auth_header(&self) -> Result<String, String> {
         let token = self.access_token()?;
         Ok(format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         ))
     }
@@ -288,7 +288,7 @@ impl JellyfinClient {
         let body = LoginRequest { username, password };
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\"",
             self.device_id, APP_VERSION
         );
 
@@ -393,7 +393,7 @@ impl JellyfinClient {
         let url = format!("{}/Playlists", self.base_url);
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         );
 
@@ -434,7 +434,7 @@ impl JellyfinClient {
         let url = format!("{}/Playlists/{}/Items", self.base_url, playlist_id);
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         );
 
@@ -477,7 +477,7 @@ impl JellyfinClient {
         let url = format!("{}/Playlists/{}/Items", self.base_url, playlist_id);
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         );
 
@@ -549,7 +549,7 @@ impl JellyfinClient {
         let url = format!("{}/Sessions/Playing", self.base_url);
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         );
 
@@ -592,7 +592,7 @@ impl JellyfinClient {
         let url = format!("{}/Sessions/Playing/Progress", self.base_url);
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         );
 
@@ -634,7 +634,7 @@ impl JellyfinClient {
         let url = format!("{}/Sessions/Playing/Stopped", self.base_url);
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         );
 
@@ -670,7 +670,7 @@ impl JellyfinClient {
         let url = format!("{}/Sessions/Ping", self.base_url);
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         );
 
@@ -702,7 +702,7 @@ impl JellyfinClient {
         );
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         );
 
@@ -734,7 +734,7 @@ impl JellyfinClient {
         );
 
         let auth_header = format!(
-            "MediaBrowser Client=\"Rusic\", Device=\"Rusic\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
+            "MediaBrowser Client=\"Kopuz\", Device=\"Kopuz\", DeviceId=\"{}\", Version=\"{}\", Token=\"{}\"",
             self.device_id, APP_VERSION, token
         );
 

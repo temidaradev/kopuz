@@ -28,7 +28,7 @@ pub fn Titlebar() -> Element {
                 class: "absolute inset-0 flex items-center justify-center pointer-events-none",
                 span {
                     class: "text-[11px] text-white/35 tracking-[0.2em] font-mono uppercase",
-                    "Rusic"
+                    "Kopuz"
                 }
             }
 
