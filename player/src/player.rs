@@ -1,5 +1,3 @@
-#[cfg(not(target_arch = "wasm32"))]
-#[cfg(target_os = "linux")]
 use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
