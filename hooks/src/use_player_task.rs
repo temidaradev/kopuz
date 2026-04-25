@@ -127,6 +127,18 @@ pub fn use_player_task(mut ctrl: PlayerController) {
     });
 
     #[cfg(target_os = "linux")]
+    use_hook(move || {
+        let mut ctrl = ctrl;
+        init_bg_channel();
+        ctrl.player.write().set_finish_callback(|| {
+            send_bg_cmd(BgCmd::Next);
+            if let Some(notify) = BG_NOTIFY.get() {
+                notify.notify_one();
+            }
+        });
+    });
+
+    #[cfg(target_os = "linux")]
     use_future(move || {
         let mut ctrl = ctrl;
         async move {

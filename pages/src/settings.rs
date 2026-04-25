@@ -1,4 +1,5 @@
 use ::server::provider::ProviderClient;
+use crate::theme_editor::ThemeEditorPage;
 use components::settings_items::{
     DirectoryPicker, DiscordPresenceSettings, LanguageSelector, MusicBrainzSettings,
     ServerSettings, SettingItem, ThemeSelector, ToggleSetting,
@@ -107,7 +108,6 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                     div { class: "space-y-4",
                         SettingItem {
                             title: rust_i18n::t!("language").to_string(),
-                            description: rust_i18n::t!("select_preferred_language").to_string(),
                             control: rsx! {
                                 LanguageSelector {
                                     current_language: config.read().language.clone(),
@@ -121,7 +121,6 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
 
                         SettingItem {
                             title: rust_i18n::t!("appearance").to_string(),
-                            description: rust_i18n::t!("select_preferred_theme").to_string(),
                             control: rsx! {
                                 ThemeSelector {
                                     current_theme: config.read().theme.clone(),
@@ -135,9 +134,9 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                         if !cfg!(target_arch = "wasm32") {
                             SettingItem {
                                 title: rust_i18n::t!("music_directory").to_string(),
-                                description: format!("{}: {}", rust_i18n::t!("current_path").to_string(), config.read().music_directory.display()),
-                                control: rsx! {
+                                    control: rsx! {
                                     DirectoryPicker {
+                                        current_path: config.read().music_directory.display().to_string(),
                                         on_change: move |path| {
                                             config.write().music_directory = path;
                                         }
@@ -148,15 +147,6 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
 
                         SettingItem {
                             title: rust_i18n::t!("media_server").to_string(),
-                            description: if config.read().server.is_some() {
-                                if let Some(server) = &config.read().server {
-                                     rust_i18n::t!("configured", name = server.service.display_name()).to_string()
-                                } else {
-                                    rust_i18n::t!("server_configured").to_string()
-                                }
-                            } else {
-                                rust_i18n::t!("no_server_configured").to_string()
-                            },
                             control: rsx! {
                                 ServerSettings {
                                     server: config.read().server.clone(),
@@ -169,12 +159,7 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                         if !cfg!(target_arch = "wasm32") {
                             SettingItem {
                                 title: rust_i18n::t!("discord_presence").to_string(),
-                                description: if config.read().discord_presence.unwrap_or(true) {
-                                    rust_i18n::t!("discord_presence_enabled").to_string()
-                                } else {
-                                    rust_i18n::t!("discord_presence_disabled").to_string()
-                                },
-                                control: rsx! {
+                                    control: rsx! {
                                     DiscordPresenceSettings {
                                         enabled: config.read().discord_presence.unwrap_or(true),
                                         on_change: move |val| config.write().discord_presence = Some(val),
@@ -184,11 +169,6 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                         }
                         SettingItem {
                             title: rust_i18n::t!("reduce_animations").to_string(),
-                            description: if config.read().reduce_animations {
-                                rust_i18n::t!("animations_reduced").to_string()
-                            } else {
-                                rust_i18n::t!("animations_enabled").to_string()
-                            },
                             control: rsx! {
                                 ToggleSetting {
                                     enabled: config.read().reduce_animations,
@@ -196,9 +176,19 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                                 }
                             }
                         }
+                        if !cfg!(target_arch = "wasm32") {
+                            SettingItem {
+                                title: rust_i18n::t!("show_source_toggle").to_string(),
+                                    control: rsx! {
+                                    ToggleSetting {
+                                        enabled: config.read().show_source_toggle,
+                                        on_change: move |val| config.write().show_source_toggle = val,
+                                    }
+                                }
+                            }
+                        }
                         SettingItem {
                             title: rust_i18n::t!("listenbrainz").to_string(),
-                            description: rust_i18n::t!("listenbrainz_token").to_string(),
                             control: rsx! {
                                 MusicBrainzSettings {
                                     current: config.read().musicbrainz_token.clone(),
@@ -221,6 +211,14 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                         //     }
                         // }
                     }
+                }
+
+                section {
+                    h2 {
+                        class: "text-lg font-semibold text-white/80 mb-4 border-b border-white/5 pb-2",
+                        "{rust_i18n::t!(\"theme_editor\")}"
+                    }
+                    ThemeEditorPage { config, embedded: true }
                 }
 
                 if show_add_server() {

@@ -107,16 +107,13 @@ impl Player {
         source: Box<dyn symphonia::core::io::MediaSource>,
         meta: NowPlayingMeta,
         hint: Hint,
-    ) {
+    ) -> Result<(), String> {
         self.stop_internal();
 
         let state = Arc::new(Mutex::new(PlaybackState {
             paused: false,
             stopped: false,
-            volume: {
-                let old = self.state.lock().unwrap();
-                old.volume
-            },
+            volume: { self.state.lock().unwrap_or_else(|e| e.into_inner()).volume },
             seek_to: None,
             finished: false,
         }));
@@ -141,13 +138,13 @@ impl Player {
         let host = cpal::default_host();
         let device = host
             .default_output_device()
-            .expect("no output device available");
+            .ok_or_else(|| "no audio output device available".to_string())?;
 
         let stream = device
             .build_output_stream(
                 &self.stream_config,
                 move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-                    let st = stream_state.lock().unwrap();
+                    let st = stream_state.lock().unwrap_or_else(|e| e.into_inner());
                     let volume = st.volume;
                     let paused = st.paused;
                     drop(st);
@@ -159,7 +156,7 @@ impl Player {
                         return;
                     }
 
-                    let cons = stream_consumer.lock().unwrap();
+                    let cons = stream_consumer.lock().unwrap_or_else(|e| e.into_inner());
                     let read = cons.read(data).unwrap_or(0);
                     drop(cons);
 
@@ -180,7 +177,7 @@ impl Player {
                 },
                 None,
             )
-            .expect("failed to build output stream");
+            .map_err(|e| format!("failed to build output stream: {e}"))?;
 
         #[cfg(target_os = "linux")]
         {
@@ -210,8 +207,12 @@ impl Player {
             });
         }
 
-        stream.play().expect("failed to start output stream");
+        stream
+            .play()
+            .map_err(|e| format!("failed to start output stream: {e}"))?;
+
         self._stream = Some(stream);
+        self._device = device;
 
         let decoder_state = state.clone();
         let decoder_channels = channels;
@@ -234,6 +235,8 @@ impl Player {
         self.now_playing = Some(meta);
 
         self.update_now_playing_system();
+
+        Ok(())
     }
 
     fn decoder_thread(
@@ -248,7 +251,7 @@ impl Player {
         let mss = MediaSourceStream::new(source, Default::default());
 
         let finish_natural = |state: &Arc<Mutex<PlaybackState>>| {
-            state.lock().unwrap().finished = true;
+            state.lock().unwrap_or_else(|e| e.into_inner()).finished = true;
             if let Some(cb) = &finish_cb {
                 cb();
             }
@@ -291,20 +294,27 @@ impl Player {
             .map(|c| c.count())
             .unwrap_or(target_channels);
 
-        let mut decoder = match symphonia::default::get_codecs()
-            .make(&track.codec_params, &DecoderOptions::default())
-        {
-            Ok(d) => d,
-            Err(e) => {
-                eprintln!("symphonia codec error: {}", e);
-                finish_natural(&state);
-                return;
-            }
-        };
+        let mut decoder: Box<dyn symphonia::core::codecs::Decoder> =
+            match symphonia::default::get_codecs()
+                .make(&track.codec_params, &DecoderOptions::default())
+            {
+                Ok(d) => d,
+                Err(_) => match symphonia_adapter_libopus::OpusDecoder::try_new(
+                    &track.codec_params,
+                    &DecoderOptions::default(),
+                ) {
+                    Ok(d) => Box::new(d),
+                    Err(e) => {
+                        eprintln!("symphonia codec error: {}", e);
+                        finish_natural(&state);
+                        return;
+                    }
+                },
+            };
 
         loop {
             {
-                let mut st = state.lock().unwrap();
+                let mut st = state.lock().unwrap_or_else(|e| e.into_inner());
                 if st.stopped {
                     st.finished = true;
                     return;
@@ -326,7 +336,7 @@ impl Player {
                 while st.paused && !st.stopped {
                     drop(st);
                     std::thread::sleep(Duration::from_millis(10));
-                    st = state.lock().unwrap();
+                    st = state.lock().unwrap_or_else(|e| e.into_inner());
                 }
                 if st.stopped {
                     st.finished = true;
@@ -382,7 +392,7 @@ impl Player {
             let mut offset = 0;
             while offset < samples.len() {
                 {
-                    let st = state.lock().unwrap();
+                    let st = state.lock().unwrap_or_else(|e| e.into_inner());
                     if st.stopped {
                         return;
                     }
@@ -593,7 +603,7 @@ impl Player {
     }
 
     pub fn pause(&mut self) {
-        let mut st = self.state.lock().unwrap();
+        let mut st = self.state.lock().unwrap_or_else(|e| e.into_inner());
         if !st.paused {
             st.paused = true;
             drop(st);
@@ -603,7 +613,7 @@ impl Player {
     }
 
     pub fn play_resume(&mut self) {
-        let mut st = self.state.lock().unwrap();
+        let mut st = self.state.lock().unwrap_or_else(|e| e.into_inner());
         if st.paused {
             st.paused = false;
             drop(st);
@@ -614,7 +624,7 @@ impl Player {
 
     pub fn seek(&mut self, time: Duration) {
         {
-            let mut st = self.state.lock().unwrap();
+            let mut st = self.state.lock().unwrap_or_else(|e| e.into_inner());
             st.seek_to = Some(time);
             self.position_micros
                 .store(time.as_micros() as u64, Ordering::Relaxed);
@@ -631,12 +641,12 @@ impl Player {
     }
 
     pub fn is_empty(&self) -> bool {
-        let st = self.state.lock().unwrap();
+        let st = self.state.lock().unwrap_or_else(|e| e.into_inner());
         st.finished
     }
 
     pub fn is_paused(&self) -> bool {
-        let st = self.state.lock().unwrap();
+        let st = self.state.lock().unwrap_or_else(|e| e.into_inner());
         st.paused
     }
 
@@ -647,7 +657,7 @@ impl Player {
 
     fn stop_internal(&mut self) {
         {
-            let mut st = self.state.lock().unwrap();
+            let mut st = self.state.lock().unwrap_or_else(|e| e.into_inner());
             st.stopped = true;
             st.paused = false;
         }
@@ -661,7 +671,7 @@ impl Player {
     }
 
     pub fn set_volume(&mut self, volume: f32) {
-        let mut st = self.state.lock().unwrap();
+        let mut st = self.state.lock().unwrap_or_else(|e| e.into_inner());
         st.volume = volume;
     }
 

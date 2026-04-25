@@ -180,7 +180,12 @@ impl PlayerController {
                                     artwork: Some(cover_url.clone()),
                                 };
 
-                                player.write().play(source, meta, hint);
+                                if let Err(e) = player.write().play(source, meta, hint) {
+                                    eprintln!("Playback error: {e}");
+                                    is_loading.set(false);
+                                    skip_in_progress.set(false);
+                                    return;
+                                }
                                 player.write().set_volume(*volume.peek());
                                 is_loading.set(false);
                                 is_playing.set(true);
@@ -427,7 +432,11 @@ impl PlayerController {
                             artwork,
                         };
 
-                        self.player.write().play(source, meta, hint);
+                        if let Err(e) = self.player.write().play(source, meta, hint) {
+                            eprintln!("Playback error: {e}");
+                            self.skip_in_progress.set(false);
+                            return;
+                        }
                         self.player.write().set_volume(*self.volume.peek());
 
                         self.skip_in_progress.set(false);
