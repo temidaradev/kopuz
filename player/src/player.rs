@@ -59,7 +59,6 @@ pub struct Player {
     position_micros: Arc<AtomicU64>,
     finish_callback: Option<Arc<dyn Fn() + Send + Sync + 'static>>,
 
-    #[cfg(target_os = "linux")]
     position_thread_stop: Arc<AtomicBool>,
 }
 
