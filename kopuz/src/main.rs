@@ -400,6 +400,19 @@ fn App() -> Element {
                     favorites_store.set(loaded);
                 }
 
+                {
+                    let no_local_tracks = library.peek().tracks.is_empty();
+                    let server_connected = config
+                        .peek()
+                        .server
+                        .as_ref()
+                        .and_then(|s| s.access_token.as_ref())
+                        .is_some();
+                    if no_local_tracks && server_connected {
+                        config.write().active_source = config::MusicSource::Server;
+                    }
+                }
+
                 initial_load_done.set(true);
             });
         }
