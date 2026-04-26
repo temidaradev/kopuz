@@ -617,7 +617,7 @@ fn App() -> Element {
                 }
             },
             if cfg!(target_os = "linux") {
-                Titlebar {}
+                div { dir: "ltr", Titlebar {} }
             }
             div {
                 class: "{content_row_class}",
