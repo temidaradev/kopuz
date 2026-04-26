@@ -128,7 +128,7 @@ invalid_server_url = 󱤿URL 󱤧󱤍
 username_and_password_required = 󱥞󱥄󱥌󱤉󱥂󱤉󱤥
 login_failed = 󱤖󱤧󱤍󱦝{ $error }
 error_server_not_configured = 󱥌󱤧󱤍󱤇󱤓󱤂󱤉󱤥
-error_fetch_songs = 󱤴󱤘󱤂󱤖󱤓󱤉󱤕󱥩󱤟{ $album_id }'󱦝{ $error }
+error_fetch_songs = 󱤴󱤘󱤂󱤖󱤓󱤉󱤕󱥩󱤟{ $album_id }󱦝{ $error }
 unsupported_provider = 󱥌{ $service }󱤧󱥔　󱥨󱤪󱥁󱤧󱤬󱤂󱥩󱥆
 unsupported_provider_desc = 󱤃󱥍󱥌{ $service }󱤧󱤬󱤂󱤧󱤖󱤬󱥫󱥒
 
