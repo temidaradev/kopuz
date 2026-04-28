@@ -18,10 +18,11 @@ use kopuz_route::Route;
 use player::player::Player;
 use reader::FavoritesStore;
 #[cfg(not(target_arch = "wasm32"))]
+use std::path::PathBuf;
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 
 mod web_storage;
-
 
 const FAVICON: Asset = asset!("../assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("../assets/main.css");
@@ -486,35 +487,57 @@ fn App() -> Element {
         if !*initial_load_done.read() {
             return;
         }
-        let music_dir = config.read().music_directory.clone();
+        let configured_dirs = config.read().music_directory.clone();
         let _ = trigger_rescan.read();
 
         #[cfg(not(target_arch = "wasm32"))]
         spawn(async move {
-            if music_dir.exists() {
-                let mut current_lib = library.peek().clone();
+            let scannable_dirs: Vec<PathBuf> = configured_dirs
+                .iter()
+                .filter(|d| d.exists())
+                .cloned()
+                .collect();
+            let mut current_lib = library.peek().clone();
 
-                if current_lib.root_path != music_dir {
-                    current_lib = reader::Library::new(music_dir.clone());
-                    library.set(current_lib.clone());
+            let current_roots: std::collections::HashSet<_> =
+                current_lib.root_paths.iter().cloned().collect();
+            let new_roots: std::collections::HashSet<_> = configured_dirs.iter().cloned().collect();
+
+            if current_roots != new_roots {
+                current_lib = reader::Library::new(configured_dirs.clone());
+                library.set(current_lib.clone());
+            }
+
+            if !configured_dirs.is_empty() {
+                for dir in &scannable_dirs {
+                    let _ =
+                        reader::scan_directory(dir.clone(), cover_cache(), &mut current_lib).await;
                 }
 
-                if (reader::scan_directory(music_dir, cover_cache(), &mut current_lib).await)
-                    .is_ok()
-                {
-                    current_lib.tracks.retain(|t| t.path.exists());
-                    let valid_album_ids: std::collections::HashSet<_> = current_lib
-                        .tracks
-                        .iter()
-                        .map(|t| t.album_id.clone())
-                        .collect();
-                    current_lib
-                        .albums
-                        .retain(|a| valid_album_ids.contains(&a.id));
+                current_lib.tracks.retain(|t| {
+                    let in_configured_root = configured_dirs.iter().any(|d| t.path.starts_with(d));
+                    let in_scannable_root = scannable_dirs.iter().any(|d| t.path.starts_with(d));
 
-                    library.set(current_lib.clone());
-                    let _ = current_lib.save(&lib_path());
-                }
+                    in_configured_root && (!in_scannable_root || t.path.exists())
+                });
+
+                let valid_album_ids: std::collections::HashSet<_> = current_lib
+                    .tracks
+                    .iter()
+                    .map(|t| t.album_id.clone())
+                    .collect();
+                current_lib
+                    .albums
+                    .retain(|a| valid_album_ids.contains(&a.id));
+
+                library.set(current_lib.clone());
+                let _ = current_lib.save(&lib_path());
+            } else {
+                current_lib.tracks.clear();
+                current_lib.albums.clear();
+                current_lib.root_paths.clear();
+                library.set(current_lib.clone());
+                let _ = current_lib.save(&lib_path());
             }
         });
     });

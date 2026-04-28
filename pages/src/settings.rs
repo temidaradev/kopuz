@@ -1,7 +1,7 @@
-use ::server::provider::ProviderClient;
 use crate::theme_editor::ThemeEditorPage;
+use ::server::provider::ProviderClient;
 use components::settings_items::{
-    DirectoryPicker, DiscordPresenceSettings, LanguageSelector, MusicBrainzSettings,
+    DiscordPresenceSettings, LanguageSelector, MultiDirectoryPicker, MusicBrainzSettings,
     ServerSettings, SettingItem, ThemeSelector, ToggleSetting,
 };
 use components::settings_popups::{AddServerPopup, LoginPopup};
@@ -87,7 +87,10 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                         show_login.set(false);
                     }
                     Err(e) => {
-                        login_error.set(Some(i18n::t_with("login_failed", &[("error", e.to_string())])));
+                        login_error.set(Some(i18n::t_with(
+                            "login_failed",
+                            &[("error", e.to_string())],
+                        )));
                     }
                 }
             });
@@ -135,10 +138,10 @@ pub fn Settings(config: Signal<AppConfig>) -> Element {
                             SettingItem {
                                 title: i18n::t("music_directory").to_string(),
                                     control: rsx! {
-                                    DirectoryPicker {
-                                        current_path: config.read().music_directory.display().to_string(),
-                                        on_change: move |path| {
-                                            config.write().music_directory = path;
+                                    MultiDirectoryPicker {
+                                        current_paths: config.read().music_directory.clone(),
+                                        on_change: move |paths| {
+                                            config.write().music_directory = paths;
                                         }
                                     }
                                 }

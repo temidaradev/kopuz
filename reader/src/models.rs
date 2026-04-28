@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -32,8 +32,12 @@ pub struct Track {
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Library {
-    #[serde(default)]
-    pub root_path: PathBuf,
+    #[serde(
+        default,
+        alias = "root_path",
+        deserialize_with = "deserialize_root_paths"
+    )]
+    pub root_paths: Vec<PathBuf>,
     pub tracks: Vec<Track>,
     pub albums: Vec<Album>,
     #[serde(default)]
@@ -44,10 +48,26 @@ pub struct Library {
     pub jellyfin_genres: Vec<(String, String)>, // (Name, ID)
 }
 
+fn deserialize_root_paths<'de, D>(deserializer: D) -> Result<Vec<PathBuf>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(PathBuf),
+        Many(Vec<PathBuf>),
+    }
+    match OneOrMany::deserialize(deserializer)? {
+        OneOrMany::One(p) => Ok(vec![p]),
+        OneOrMany::Many(v) => Ok(v),
+    }
+}
+
 impl Library {
-    pub fn new(root_path: PathBuf) -> Self {
+    pub fn new(root_paths: Vec<PathBuf>) -> Self {
         Self {
-            root_path,
+            root_paths,
             ..Default::default()
         }
     }
@@ -98,6 +118,25 @@ impl Library {
     pub fn remove_album(&mut self, album_id: &str) {
         self.albums.retain(|a| a.id != album_id);
         self.tracks.retain(|t| t.album_id != album_id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Library;
+    use std::path::PathBuf;
+
+    #[test]
+    fn library_deserializes_legacy_root_path() {
+        let json = r#"{
+            "root_path": "/music",
+            "tracks": [],
+            "albums": []
+        }"#;
+
+        let library: Library = serde_json::from_str(json).unwrap();
+
+        assert_eq!(library.root_paths, vec![PathBuf::from("/music")]);
     }
 }
 

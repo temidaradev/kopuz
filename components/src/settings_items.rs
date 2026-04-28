@@ -88,25 +88,69 @@ pub fn ThemeSelector(current_theme: String, on_change: EventHandler<String>) -> 
 }
 
 #[component]
-pub fn DirectoryPicker(
-    current_path: String,
-    on_change: EventHandler<std::path::PathBuf>,
+pub fn MultiDirectoryPicker(
+    current_paths: Vec<std::path::PathBuf>,
+    on_change: EventHandler<Vec<std::path::PathBuf>>,
 ) -> Element {
+    let add_text = i18n::t("add_folder");
+    let remove_text = i18n::t("remove");
+    let no_folders_text = i18n::t("no_music_folders");
+
     rsx! {
-        div { class: "flex items-center gap-3",
-            span { class: "text-xs text-slate-500 font-mono truncate max-w-xs", "{current_path}" }
-            button {
-                onclick: move |_| {
-                    #[cfg(not(target_arch = "wasm32"))]
-                    spawn(async move {
-                        if let Some(handle) = AsyncFileDialog::new().pick_folder().await {
-                            let path = handle.path().to_path_buf();
-                            on_change.call(path);
+        div { class: "flex flex-col gap-2 w-full",
+            if current_paths.is_empty() {
+                p { class: "text-xs text-slate-500 italic", "{no_folders_text}" }
+            }
+            for (i, path) in current_paths.iter().enumerate() {
+                {
+                    let paths_for_remove = current_paths.clone();
+                    let display = path.display().to_string();
+                    rsx! {
+                        div { key: "{display}",
+                            class: "flex items-center justify-between gap-3 bg-white/5 p-2 rounded w-full",
+                            span {
+                                class: "text-xs text-slate-400 font-mono truncate flex-1",
+                                "{display}"
+                            }
+                            button {
+                                onclick: move |_| {
+                                    let mut new_paths = paths_for_remove.clone();
+                                    new_paths.remove(i);
+                                    on_change.call(new_paths);
+                                },
+                                class: "text-red-400 hover:text-red-300 text-xs px-2 py-0.5 rounded transition-colors shrink-0",
+                                "{remove_text}"
+                            }
                         }
-                    });
-                },
-                class: "bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-sm text-white transition-colors shrink-0",
-                "{i18n::t(\"change\")}"
+                    }
+                }
+            }
+            {
+                let paths_for_add = current_paths.clone();
+                let on_change_add = on_change;
+                rsx! {
+                    button {
+                        onclick: move |_| {
+                            #[cfg(not(target_arch = "wasm32"))]
+                            {
+                                let paths = paths_for_add.clone();
+                                let on_change = on_change_add;
+                                spawn(async move {
+                                    if let Some(handle) = AsyncFileDialog::new().pick_folder().await {
+                                        let new_path = handle.path().to_path_buf();
+                                        if !paths.contains(&new_path) {
+                                            let mut updated = paths.clone();
+                                            updated.push(new_path);
+                                            on_change.call(updated);
+                                        }
+                                    }
+                                });
+                            }
+                        },
+                        class: "bg-white/10 hover:bg-white/20 px-3 py-1 rounded text-sm text-white transition-colors self-start",
+                        "{add_text}"
+                    }
+                }
             }
         }
     }

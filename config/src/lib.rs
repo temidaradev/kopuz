@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fs;
 
@@ -57,7 +57,8 @@ pub struct AppConfig {
     pub active_source: MusicSource,
     #[serde(default)]
     pub source_explicitly_set: bool,
-    pub music_directory: PathBuf,
+    #[serde(default, deserialize_with = "deserialize_music_directories")]
+    pub music_directory: Vec<PathBuf>,
     #[serde(default = "default_theme")]
     pub theme: String,
     #[serde(default = "default_device_id")]
@@ -156,6 +157,24 @@ fn default_language() -> String {
     "en".to_string()
 }
 
+/// Custom deserializer for music_directory that accepts either a single PathBuf
+/// (old config format) or a Vec<PathBuf> (new multi-folder format).
+fn deserialize_music_directories<'de, D>(deserializer: D) -> Result<Vec<PathBuf>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(PathBuf),
+        Many(Vec<PathBuf>),
+    }
+    match OneOrMany::deserialize(deserializer)? {
+        OneOrMany::One(p) => Ok(vec![p]),
+        OneOrMany::Many(v) => Ok(v),
+    }
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         let music_directory = directories::UserDirs::new()
@@ -165,7 +184,7 @@ impl Default for AppConfig {
             server: None,
             active_source: MusicSource::Local,
             source_explicitly_set: false,
-            music_directory,
+            music_directory: vec![music_directory],
             theme: default_theme(),
             device_id: default_device_id(),
             discord_presence: Some(true),
@@ -246,5 +265,36 @@ impl AppConfig {
             return Err(e);
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AppConfig;
+    use std::path::PathBuf;
+
+    #[test]
+    fn config_deserializes_legacy_single_music_directory() {
+        let json = r#"{
+            "music_directory": "/music"
+        }"#;
+
+        let config: AppConfig = serde_json::from_str(json).unwrap();
+
+        assert_eq!(config.music_directory, vec![PathBuf::from("/music")]);
+    }
+
+    #[test]
+    fn config_deserializes_multiple_music_directories() {
+        let json = r#"{
+            "music_directory": ["/music", "/archive"]
+        }"#;
+
+        let config: AppConfig = serde_json::from_str(json).unwrap();
+
+        assert_eq!(
+            config.music_directory,
+            vec![PathBuf::from("/music"), PathBuf::from("/archive")]
+        );
     }
 }
