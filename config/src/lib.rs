@@ -49,6 +49,12 @@ pub enum SortOrder {
     Album,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ArtistViewOrder {
+    Tracks,
+    Albums,
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum BackBehavior {
     #[default]
@@ -73,6 +79,8 @@ pub struct AppConfig {
     pub discord_presence: Option<bool>,
     #[serde(default = "default_sort_order")]
     pub sort_order: SortOrder,
+    #[serde(default = "default_artist_view_order")]
+    pub artist_view_order: ArtistViewOrder,
     #[serde(default)]
     pub listen_counts: HashMap<String, u64>,
     #[serde(default)]
@@ -140,6 +148,10 @@ fn default_sort_order() -> SortOrder {
     SortOrder::Title
 }
 
+fn default_artist_view_order() -> ArtistViewOrder {
+    ArtistViewOrder::Tracks
+}
+
 fn default_show_source_toggle() -> bool {
     true
 }
@@ -179,6 +191,7 @@ impl Default for AppConfig {
             device_id: default_device_id(),
             discord_presence: Some(true),
             sort_order: default_sort_order(),
+            artist_view_order: default_artist_view_order(),
             listen_counts: HashMap::new(),
             musicbrainz_token: String::new(),
             lastfm_token: String::new(),

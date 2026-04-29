@@ -22,7 +22,6 @@ use std::sync::Arc;
 
 mod web_storage;
 
-
 const FAVICON: Asset = asset!("../assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("../assets/main.css");
 const THEME_CSS: Asset = asset!("../assets/themes.css");
@@ -738,6 +737,10 @@ fn App() -> Element {
                                 artist_name: selected_artist_name,
                                 playlist_store: playlist_store,
                                 player: player,
+                                on_navigate: move |album_id| {
+                                    selected_album_id.set(album_id);
+                                    current_route.set(Route::Album);
+                                },
                                 is_playing: is_playing,
                                 current_playing: current_playing,
                                 current_song_cover_url: current_song_cover_url,

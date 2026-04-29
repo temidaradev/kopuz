@@ -13,6 +13,7 @@ pub fn Artist(
     artist_name: Signal<String>,
     playlist_store: Signal<PlaylistStore>,
     player: Signal<player::Player>,
+    on_navigate: EventHandler<String>,
     mut is_playing: Signal<bool>,
     mut current_playing: Signal<u64>,
     mut current_song_cover_url: Signal<String>,
@@ -48,6 +49,7 @@ pub fn Artist(
                             config,
                             artist_name,
                             playlist_store,
+                            on_navigate,
                             queue,
                             current_queue_index,
                         }
@@ -76,6 +78,7 @@ pub fn Artist(
                             config,
                             artist_name,
                             playlist_store,
+                            on_navigate,
                             queue,
                             current_queue_index,
                         }
