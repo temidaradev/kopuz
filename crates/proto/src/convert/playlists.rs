@@ -1,44 +1,37 @@
 //! Playlists and the folders that hold them.
 
+use super::macros::struct_conversion;
 use crate::*;
 
-pub fn playlist_info_to_proto(value: &api::PlaylistInfo) -> PlaylistInfo {
-    PlaylistInfo {
-        id: value.id.clone(),
-        name: value.name.clone(),
-        track_count: value.track_count,
-        artwork: value.artwork.clone(),
-        track_keys: value.track_keys.clone(),
-        manual_artwork: value.manual_artwork,
+struct_conversion!(
+    playlist_info_to_proto,
+    playlist_info_from_proto,
+    api::PlaylistInfo,
+    PlaylistInfo,
+    copy {
+        track_count,
+        manual_artwork
+    },
+    clone {
+        id,
+        name,
+        artwork,
+        track_keys
     }
-}
+);
 
-pub fn playlist_info_from_proto(value: &PlaylistInfo) -> api::PlaylistInfo {
-    api::PlaylistInfo {
-        id: value.id.clone(),
-        name: value.name.clone(),
-        track_count: value.track_count,
-        artwork: value.artwork.clone(),
-        track_keys: value.track_keys.clone(),
-        manual_artwork: value.manual_artwork,
+struct_conversion!(
+    playlist_folder_to_proto,
+    playlist_folder_from_proto,
+    api::PlaylistFolderInfo,
+    PlaylistFolderInfo,
+    copy {},
+    clone {
+        id,
+        name,
+        playlist_ids
     }
-}
-
-pub fn playlist_folder_to_proto(value: &api::PlaylistFolderInfo) -> PlaylistFolderInfo {
-    PlaylistFolderInfo {
-        id: value.id.clone(),
-        name: value.name.clone(),
-        playlist_ids: value.playlist_ids.clone(),
-    }
-}
-
-pub fn playlist_folder_from_proto(value: &PlaylistFolderInfo) -> api::PlaylistFolderInfo {
-    api::PlaylistFolderInfo {
-        id: value.id.clone(),
-        name: value.name.clone(),
-        playlist_ids: value.playlist_ids.clone(),
-    }
-}
+);
 
 pub fn playlist_catalog_to_proto(value: &api::PlaylistCatalog) -> PlaylistCatalog {
     PlaylistCatalog {

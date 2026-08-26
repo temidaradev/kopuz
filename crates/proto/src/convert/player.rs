@@ -1,3 +1,4 @@
+use super::macros::struct_conversion;
 use super::*;
 use crate::*;
 
@@ -58,37 +59,23 @@ pub fn now_playing_from_proto(value: &NowPlaying) -> api::NowPlaying {
     }
 }
 
-pub fn anchor_to_proto(value: &api::PositionAnchor) -> PositionAnchor {
-    PositionAnchor {
-        ms: value.ms,
-        at_ms: value.at_ms,
-        playing: value.playing,
-    }
-}
+struct_conversion!(
+    anchor_to_proto,
+    anchor_from_proto,
+    api::PositionAnchor,
+    PositionAnchor,
+    copy { ms, at_ms, playing },
+    clone {}
+);
 
-pub fn anchor_from_proto(value: &PositionAnchor) -> api::PositionAnchor {
-    api::PositionAnchor {
-        ms: value.ms,
-        at_ms: value.at_ms,
-        playing: value.playing,
-    }
-}
-
-pub fn buffered_to_proto(value: &api::BufferedRange) -> BufferedRange {
-    BufferedRange {
-        start: value.start,
-        end: value.end,
-        total: value.total,
-    }
-}
-
-pub fn buffered_from_proto(value: &BufferedRange) -> api::BufferedRange {
-    api::BufferedRange {
-        start: value.start,
-        end: value.end,
-        total: value.total,
-    }
-}
+struct_conversion!(
+    buffered_to_proto,
+    buffered_from_proto,
+    api::BufferedRange,
+    BufferedRange,
+    copy { start, end, total },
+    clone {}
+);
 
 pub fn queue_summary_to_proto(value: &api::QueueSummary) -> QueueSummary {
     QueueSummary {
@@ -211,33 +198,23 @@ pub fn command_from_proto(value: &PlayerCommand) -> Option<api::PlayerCommand> {
     })
 }
 
-pub fn external_playback_to_proto(value: &api::ExternalPlayback) -> ExternalPlayback {
-    ExternalPlayback {
-        kind: value.kind.clone(),
-        device: value.device.clone(),
-    }
-}
+struct_conversion!(
+    external_playback_to_proto,
+    external_playback_from_proto,
+    api::ExternalPlayback,
+    ExternalPlayback,
+    copy {},
+    clone { kind, device }
+);
 
-pub fn external_playback_from_proto(value: &ExternalPlayback) -> api::ExternalPlayback {
-    api::ExternalPlayback {
-        kind: value.kind.clone(),
-        device: value.device.clone(),
-    }
-}
-
-pub fn external_lease_to_proto(value: &api::ExternalPlaybackLease) -> ExternalPlaybackLease {
-    ExternalPlaybackLease {
-        lease_id: value.lease_id.clone(),
-        expires_in_ms: value.expires_in_ms,
-    }
-}
-
-pub fn external_lease_from_proto(value: &ExternalPlaybackLease) -> api::ExternalPlaybackLease {
-    api::ExternalPlaybackLease {
-        lease_id: value.lease_id.clone(),
-        expires_in_ms: value.expires_in_ms,
-    }
-}
+struct_conversion!(
+    external_lease_to_proto,
+    external_lease_from_proto,
+    api::ExternalPlaybackLease,
+    ExternalPlaybackLease,
+    copy { expires_in_ms },
+    clone { lease_id }
+);
 
 pub fn external_report_to_proto(value: &api::ExternalPlaybackReport) -> ExternalPlaybackReport {
     ExternalPlaybackReport {

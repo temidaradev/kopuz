@@ -1,5 +1,6 @@
 //! Sources, servers, credentials, and the integrations attached to them.
 
+use super::macros::struct_conversion;
 use super::*;
 use crate::*;
 
@@ -106,23 +107,19 @@ pub fn server_draft_from_proto(value: &ServerDraft) -> api::ServerDraft {
     }
 }
 
-pub fn credential_to_proto(value: &api::CredentialProvision) -> CredentialProvision {
-    CredentialProvision {
-        server_id: value.server_id.clone(),
-        secret: value.secret.clone(),
-        user_id: value.user_id.clone(),
-        browser: value.browser.clone(),
+struct_conversion!(
+    credential_to_proto,
+    credential_from_proto,
+    api::CredentialProvision,
+    CredentialProvision,
+    copy {},
+    clone {
+        server_id,
+        secret,
+        user_id,
+        browser
     }
-}
-
-pub fn credential_from_proto(value: &CredentialProvision) -> api::CredentialProvision {
-    api::CredentialProvision {
-        server_id: value.server_id.clone(),
-        secret: value.secret.clone(),
-        user_id: value.user_id.clone(),
-        browser: value.browser.clone(),
-    }
-}
+);
 
 pub fn integration_status_to_proto(
     value: &api::IntegrationCredentialStatus,
@@ -166,67 +163,53 @@ pub fn integration_provision_from_proto(
     }
 }
 
-pub fn source_folder_to_proto(value: &api::SourceFolderEntry) -> SourceFolderEntry {
-    SourceFolderEntry {
-        path: value.path.clone(),
-        name: value.name.clone(),
-    }
-}
+struct_conversion!(
+    source_folder_to_proto,
+    source_folder_from_proto,
+    api::SourceFolderEntry,
+    SourceFolderEntry,
+    copy {},
+    clone { path, name }
+);
 
-pub fn source_folder_from_proto(value: &SourceFolderEntry) -> api::SourceFolderEntry {
-    api::SourceFolderEntry {
-        path: value.path.clone(),
-        name: value.name.clone(),
+struct_conversion!(
+    external_access_to_proto,
+    external_access_from_proto,
+    api::ExternalAccess,
+    ExternalAccess,
+    copy {},
+    clone {
+        kind,
+        access_token,
+        client_id
     }
-}
+);
 
-pub fn external_access_to_proto(value: &api::ExternalAccess) -> ExternalAccess {
-    ExternalAccess {
-        kind: value.kind.clone(),
-        access_token: value.access_token.clone(),
-        client_id: value.client_id.clone(),
+struct_conversion!(
+    local_source_draft_to_proto,
+    local_source_draft_from_proto,
+    api::LocalSourceDraft,
+    LocalSourceDraft,
+    copy {},
+    clone {
+        id,
+        name,
+        directories
     }
-}
+);
 
-pub fn external_access_from_proto(value: &ExternalAccess) -> api::ExternalAccess {
-    api::ExternalAccess {
-        kind: value.kind.clone(),
-        access_token: value.access_token.clone(),
-        client_id: value.client_id.clone(),
+struct_conversion!(
+    source_login_to_proto,
+    source_login_from_proto,
+    api::SourceLoginRequest,
+    SourceLoginRequest,
+    copy {},
+    clone {
+        server_id,
+        username,
+        password
     }
-}
-
-pub fn local_source_draft_to_proto(value: &api::LocalSourceDraft) -> LocalSourceDraft {
-    LocalSourceDraft {
-        id: value.id.clone(),
-        name: value.name.clone(),
-        directories: value.directories.clone(),
-    }
-}
-
-pub fn local_source_draft_from_proto(value: &LocalSourceDraft) -> api::LocalSourceDraft {
-    api::LocalSourceDraft {
-        id: value.id.clone(),
-        name: value.name.clone(),
-        directories: value.directories.clone(),
-    }
-}
-
-pub fn source_login_to_proto(value: &api::SourceLoginRequest) -> SourceLoginRequest {
-    SourceLoginRequest {
-        server_id: value.server_id.clone(),
-        username: value.username.clone(),
-        password: value.password.clone(),
-    }
-}
-
-pub fn source_login_from_proto(value: &SourceLoginRequest) -> api::SourceLoginRequest {
-    api::SourceLoginRequest {
-        server_id: value.server_id.clone(),
-        username: value.username.clone(),
-        password: value.password.clone(),
-    }
-}
+);
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,8 @@
+use super::macros::enum_conversion;
 use crate::*;
 
-pub fn error_code_to_proto(value: api::ErrorCode) -> ErrorCode {
-    match value {
+enum_conversion!(error_code_to_proto, error_code_from_proto, api::ErrorCode, ErrorCode,
+    default api::ErrorCode::Internal, unspecified ErrorCode::Unspecified, {
         api::ErrorCode::InvalidInput => ErrorCode::InvalidInput,
         api::ErrorCode::Unauthorized => ErrorCode::Unauthorized,
         api::ErrorCode::NotFound => ErrorCode::NotFound,
@@ -11,20 +12,7 @@ pub fn error_code_to_proto(value: api::ErrorCode) -> ErrorCode {
         api::ErrorCode::Unsupported => ErrorCode::Unsupported,
         api::ErrorCode::Internal => ErrorCode::Internal,
     }
-}
-
-pub fn error_code_from_proto(value: i32) -> api::ErrorCode {
-    match ErrorCode::try_from(value).unwrap_or(ErrorCode::Unspecified) {
-        ErrorCode::InvalidInput => api::ErrorCode::InvalidInput,
-        ErrorCode::Unauthorized => api::ErrorCode::Unauthorized,
-        ErrorCode::NotFound => api::ErrorCode::NotFound,
-        ErrorCode::Conflict => api::ErrorCode::Conflict,
-        ErrorCode::SourceAuthExpired => api::ErrorCode::SourceAuthExpired,
-        ErrorCode::SourceUnreachable => api::ErrorCode::SourceUnreachable,
-        ErrorCode::Unsupported => api::ErrorCode::Unsupported,
-        ErrorCode::Internal | ErrorCode::Unspecified => api::ErrorCode::Internal,
-    }
-}
+);
 
 pub fn error_body_to_proto(value: &api::ErrorBody) -> ErrorBody {
     ErrorBody {

@@ -375,13 +375,7 @@ pub enum ArtworkTarget {
     Playlist { id: String },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ArtworkEntity {
-    Track { key: String },
-    Album { id: String },
-    Artist { name: String },
-    Playlist { id: String },
-}
+pub type ArtworkEntity = ArtworkTarget;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ArtworkRequest {

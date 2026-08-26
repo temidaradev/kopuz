@@ -12,6 +12,7 @@ mod enums;
 mod error;
 mod events;
 mod library;
+mod macros;
 mod player;
 mod playlists;
 mod queue;

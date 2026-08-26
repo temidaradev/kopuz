@@ -1,5 +1,6 @@
 //! Radio stations and the registries they come from.
 
+use super::macros::struct_conversion;
 use crate::*;
 
 pub fn radio_station_to_proto(value: &api::RadioStationInfo) -> RadioStationInfo {
@@ -46,21 +47,14 @@ pub fn radio_station_from_proto(value: &RadioStationInfo) -> api::RadioStationIn
     }
 }
 
-pub fn radio_registry_to_proto(value: &api::RadioRegistryInfo) -> RadioRegistryInfo {
-    RadioRegistryInfo {
-        url: value.url.clone(),
-        enabled: value.enabled,
-        built_in: value.built_in,
-    }
-}
-
-pub fn radio_registry_from_proto(value: &RadioRegistryInfo) -> api::RadioRegistryInfo {
-    api::RadioRegistryInfo {
-        url: value.url.clone(),
-        enabled: value.enabled,
-        built_in: value.built_in,
-    }
-}
+struct_conversion!(
+    radio_registry_to_proto,
+    radio_registry_from_proto,
+    api::RadioRegistryInfo,
+    RadioRegistryInfo,
+    copy { enabled, built_in },
+    clone { url }
+);
 
 #[cfg(test)]
 mod tests {

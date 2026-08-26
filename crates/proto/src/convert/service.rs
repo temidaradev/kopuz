@@ -1,19 +1,15 @@
+use super::macros::struct_conversion;
 use super::*;
 use crate::*;
 
-pub fn favorites_to_proto(value: &api::FavoritesView) -> Favorites {
-    Favorites {
-        refs: value.refs.clone(),
-        generation: value.generation,
-    }
-}
-
-pub fn favorites_from_proto(value: &Favorites) -> api::FavoritesView {
-    api::FavoritesView {
-        refs: value.refs.clone(),
-        generation: value.generation,
-    }
-}
+struct_conversion!(
+    favorites_to_proto,
+    favorites_from_proto,
+    api::FavoritesView,
+    Favorites,
+    copy { generation },
+    clone { refs }
+);
 
 pub fn job_status_to_proto(value: &api::JobStatus) -> JobStatus {
     JobStatus {

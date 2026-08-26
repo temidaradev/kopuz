@@ -1,27 +1,21 @@
+use super::macros::struct_conversion;
 use super::*;
 use crate::*;
 
-pub fn track_filter_to_proto(value: &api::TrackFilter) -> TrackFilter {
-    TrackFilter {
-        search: value.search.clone(),
-        artist: value.artist.clone(),
-        album: value.album.clone(),
-        genre: value.genre.clone(),
-        favorite: value.favorite,
-        sort: value.sort.clone(),
+struct_conversion!(
+    track_filter_to_proto,
+    track_filter_from_proto,
+    api::TrackFilter,
+    TrackFilter,
+    copy { favorite },
+    clone {
+        search,
+        artist,
+        album,
+        genre,
+        sort
     }
-}
-
-pub fn track_filter_from_proto(value: &TrackFilter) -> api::TrackFilter {
-    api::TrackFilter {
-        search: value.search.clone(),
-        artist: value.artist.clone(),
-        album: value.album.clone(),
-        genre: value.genre.clone(),
-        favorite: value.favorite,
-        sort: value.sort.clone(),
-    }
-}
+);
 
 pub fn page_to_proto(value: api::Page) -> Page {
     Page {
@@ -164,17 +158,14 @@ pub fn lyrics_from_proto(value: &Lyrics) -> api::LyricsView {
     }
 }
 
-pub fn stats_to_proto(value: &api::StatsView) -> Stats {
-    Stats {
-        listen_counts: value.listen_counts.clone().into_iter().collect(),
-    }
-}
-
-pub fn stats_from_proto(value: &Stats) -> api::StatsView {
-    api::StatsView {
-        listen_counts: value.listen_counts.clone().into_iter().collect(),
-    }
-}
+struct_conversion!(
+    stats_to_proto,
+    stats_from_proto,
+    api::StatsView,
+    Stats,
+    copy {},
+    clone { listen_counts }
+);
 
 #[cfg(test)]
 mod tests {

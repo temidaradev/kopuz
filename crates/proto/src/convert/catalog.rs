@@ -1,49 +1,40 @@
 //! Albums, artists, search, and the provider discover catalog.
 
+use super::macros::struct_conversion;
 use super::*;
 use crate::*;
 
-pub fn album_filter_to_proto(value: &api::AlbumFilter) -> AlbumFilter {
-    AlbumFilter {
-        search: value.search.clone(),
-        artist: value.artist.clone(),
-        genre: value.genre.clone(),
-        sort: value.sort.clone(),
+struct_conversion!(
+    album_filter_to_proto,
+    album_filter_from_proto,
+    api::AlbumFilter,
+    AlbumFilter,
+    copy {},
+    clone {
+        search,
+        artist,
+        genre,
+        sort
     }
-}
+);
 
-pub fn album_filter_from_proto(value: &AlbumFilter) -> api::AlbumFilter {
-    api::AlbumFilter {
-        search: value.search.clone(),
-        artist: value.artist.clone(),
-        genre: value.genre.clone(),
-        sort: value.sort.clone(),
+struct_conversion!(
+    album_info_to_proto,
+    album_info_from_proto,
+    api::AlbumInfo,
+    AlbumInfo,
+    copy {
+        year,
+        manual_artwork
+    },
+    clone {
+        id,
+        title,
+        artist,
+        genre,
+        artwork
     }
-}
-
-pub fn album_info_to_proto(value: &api::AlbumInfo) -> AlbumInfo {
-    AlbumInfo {
-        id: value.id.clone(),
-        title: value.title.clone(),
-        artist: value.artist.clone(),
-        genre: value.genre.clone(),
-        year: value.year,
-        artwork: value.artwork.clone(),
-        manual_artwork: value.manual_artwork,
-    }
-}
-
-pub fn album_info_from_proto(value: &AlbumInfo) -> api::AlbumInfo {
-    api::AlbumInfo {
-        id: value.id.clone(),
-        title: value.title.clone(),
-        artist: value.artist.clone(),
-        genre: value.genre.clone(),
-        year: value.year,
-        artwork: value.artwork.clone(),
-        manual_artwork: value.manual_artwork,
-    }
-}
+);
 
 pub fn album_page_to_proto(value: &api::AlbumPage) -> AlbumPage {
     AlbumPage {
@@ -61,25 +52,18 @@ pub fn album_page_from_proto(value: &AlbumPage) -> api::AlbumPage {
     }
 }
 
-pub fn artist_info_to_proto(value: &api::ArtistInfo) -> ArtistInfo {
-    ArtistInfo {
-        name: value.name.clone(),
-        track_count: value.track_count,
-        album_count: value.album_count,
-        artwork: value.artwork.clone(),
-        manual_artwork: value.manual_artwork,
-    }
-}
-
-pub fn artist_info_from_proto(value: &ArtistInfo) -> api::ArtistInfo {
-    api::ArtistInfo {
-        name: value.name.clone(),
-        track_count: value.track_count,
-        album_count: value.album_count,
-        artwork: value.artwork.clone(),
-        manual_artwork: value.manual_artwork,
-    }
-}
+struct_conversion!(
+    artist_info_to_proto,
+    artist_info_from_proto,
+    api::ArtistInfo,
+    ArtistInfo,
+    copy {
+        track_count,
+        album_count,
+        manual_artwork
+    },
+    clone { name, artwork }
+);
 
 pub fn artist_page_to_proto(value: &api::ArtistPage) -> ArtistPage {
     ArtistPage {
