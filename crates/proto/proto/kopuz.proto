@@ -32,6 +32,7 @@ service Kopuz {
   rpc GetPlayerState(GetPlayerStateRequest) returns (PlayerState);
   rpc GetQueue(Page) returns (QueueWindow);
   rpc GetQueueSnapshot(GetQueueSnapshotRequest) returns (QueuePersistenceSnapshot);
+  rpc GetLiveQueue(GetLiveQueueRequest) returns (QueuePersistenceSnapshot);
   rpc GetTracks(TracksRequest) returns (TrackPage);
   rpc GetFolderTracks(FolderRequest) returns (TrackPage);
   rpc GetStats(GetStatsRequest) returns (Stats);
@@ -83,6 +84,7 @@ service Kopuz {
   rpc RemoveDownload(TrackRef) returns (RemoveDownloadResponse);
   rpc CancelDownloadItem(TrackRef) returns (CancelDownloadItemResponse);
   rpc PatchConfig(ConfigPatch) returns (ConfigView);
+  rpc PreviewEqualizer(ConfigPatch) returns (PreviewEqualizerResponse);
   rpc CreatePlaylist(CreatePlaylistRequest) returns (EntityRef);
   rpc RenamePlaylist(NamedEntity) returns (RenamePlaylistResponse);
   rpc DeletePlaylist(EntityRef) returns (DeletePlaylistResponse);
@@ -128,6 +130,9 @@ service Kopuz {
 // One message per RPC even when it carries nothing, so any of them can gain
 // a field without a signature change. Unit is the marker inside oneofs.
 message Unit {}
+
+message GetLiveQueueRequest {}
+message PreviewEqualizerResponse {}
 
 message GetQueueSnapshotRequest {}
 message SaveQueueSnapshotResponse {}
