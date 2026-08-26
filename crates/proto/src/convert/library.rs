@@ -58,6 +58,15 @@ pub fn track_info_to_proto(value: &api::TrackInfo) -> TrackInfo {
         kind: track_kind_to_proto(value.kind) as i32,
         seekable: value.seekable,
         offline: value.offline,
+        service: value
+            .service
+            .map(|service| music_service_to_proto(service) as i32),
+        artists: value.artists.clone(),
+        musicbrainz_release_id: value.musicbrainz_release_id.clone(),
+        musicbrainz_recording_id: value.musicbrainz_recording_id.clone(),
+        musicbrainz_track_id: value.musicbrainz_track_id.clone(),
+        playlist_item_id: value.playlist_item_id.clone(),
+        source: value.source.clone(),
     }
 }
 
@@ -77,6 +86,13 @@ pub fn track_info_from_proto(value: &TrackInfo) -> api::TrackInfo {
         kind: track_kind_from_proto(value.kind),
         seekable: value.seekable,
         offline: value.offline,
+        service: value.service.map(music_service_from_proto),
+        artists: value.artists.clone(),
+        musicbrainz_release_id: value.musicbrainz_release_id.clone(),
+        musicbrainz_recording_id: value.musicbrainz_recording_id.clone(),
+        musicbrainz_track_id: value.musicbrainz_track_id.clone(),
+        playlist_item_id: value.playlist_item_id.clone(),
+        source: value.source.clone(),
     }
 }
 
@@ -157,5 +173,70 @@ pub fn stats_to_proto(value: &api::StatsView) -> Stats {
 pub fn stats_from_proto(value: &Stats) -> api::StatsView {
     api::StatsView {
         listen_counts: value.listen_counts.clone().into_iter().collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn track_rows_round_trip_with_optional_fields() {
+        let track = api::TrackInfo {
+            key: "key".into(),
+            uid: "uid".into(),
+            title: "title".into(),
+            artist: "artist".into(),
+            album: "album".into(),
+            album_id: "album-id".into(),
+            duration_ms: None,
+            khz: 48,
+            bitrate: 320,
+            track_number: Some(2),
+            disc_number: None,
+            kind: api::TrackKind::Radio,
+            seekable: false,
+            offline: true,
+            service: Some(api::MusicService::YtMusic),
+            artists: vec!["artist".into(), "guest".into()],
+            musicbrainz_release_id: Some("release".into()),
+            musicbrainz_recording_id: None,
+            musicbrainz_track_id: Some("track-id".into()),
+            playlist_item_id: Some("entry".into()),
+            source: "server-1".into(),
+        };
+        assert_eq!(track, track_info_from_proto(&track_info_to_proto(&track)));
+
+        let page = api::TrackPage {
+            total: 1,
+            offset: 7,
+            items: vec![track],
+        };
+        assert_eq!(page, track_page_from_proto(&track_page_to_proto(&page)));
+    }
+
+    #[test]
+    fn lyrics_and_stats_round_trip() {
+        let lyrics = api::LyricsView {
+            plain: None,
+            synced: vec![api::LyricLineView {
+                start_ms: 1,
+                end_ms: None,
+                text: "line".into(),
+                chunks: vec![api::LyricChunkView {
+                    start_ms: 2,
+                    text: "word".into(),
+                }],
+                parent_line_index: Some(0),
+                background: true,
+                opposite_turn: true,
+            }],
+        };
+        assert_eq!(lyrics, lyrics_from_proto(&lyrics_to_proto(&lyrics)));
+
+        let stats = api::StatsView {
+            listen_counts: std::collections::HashMap::from([("uid".into(), 3)]),
+        };
+        assert_eq!(stats, stats_from_proto(&stats_to_proto(&stats)));
     }
 }

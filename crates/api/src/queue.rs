@@ -6,6 +6,8 @@ pub enum QueueMode {
     Replace,
     Append,
     PlayNext,
+    /// Insert at `SetQueueRequest::insert_index` in logical play order.
+    Insert,
 }
 
 /// What to put in the queue. Reference-shaped contexts are materialized by
@@ -35,6 +37,11 @@ pub enum QueueContext {
         station_id: String,
         stream_id: String,
     },
+    /// Literal source results that are not necessarily persisted in the
+    /// daemon library yet.
+    InlineTracks {
+        tracks: Vec<crate::library::TrackInfo>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -43,6 +50,7 @@ pub struct SetQueueRequest {
     pub context: QueueContext,
     pub start_index: Option<u32>,
     pub shuffle: Option<bool>,
+    pub insert_index: Option<u32>,
 }
 
 /// In-place queue edits. Positions are play-order (logical) indices, the same

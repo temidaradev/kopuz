@@ -19,6 +19,9 @@ pub fn event_to_proto(value: &api::ApiEvent) -> Event {
             token: *token,
             ranges: ranges.iter().map(buffered_to_proto).collect(),
         }),
+        api::ApiEvent::PlayerExternalCommand(command) => {
+            event::Kind::ExternalCommand(command_to_proto(command))
+        }
         api::ApiEvent::QueueChanged { rev, length, index } => {
             event::Kind::QueueChanged(QueueChanged {
                 rev: *rev,
@@ -89,6 +92,9 @@ pub fn event_from_proto(value: &Event) -> Option<api::ApiEvent> {
             token: buffered.token,
             ranges: buffered.ranges.iter().map(buffered_from_proto).collect(),
         },
+        event::Kind::ExternalCommand(command) => {
+            api::ApiEvent::PlayerExternalCommand(command_from_proto(command)?)
+        }
         event::Kind::QueueChanged(changed) => api::ApiEvent::QueueChanged {
             rev: changed.rev,
             length: changed.length,

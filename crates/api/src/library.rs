@@ -19,6 +19,13 @@ pub struct TrackInfo {
     pub kind: TrackKind,
     pub seekable: bool,
     pub offline: bool,
+    pub service: Option<crate::MusicService>,
+    pub artists: Vec<String>,
+    pub musicbrainz_release_id: Option<String>,
+    pub musicbrainz_recording_id: Option<String>,
+    pub musicbrainz_track_id: Option<String>,
+    pub playlist_item_id: Option<String>,
+    pub source: String,
 }
 
 pub const DEFAULT_PAGE_LIMIT: u32 = 200;

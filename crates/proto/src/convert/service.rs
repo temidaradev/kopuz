@@ -54,3 +54,44 @@ pub fn config_view_from_proto(value: &ConfigView) -> api::ConfigView {
         locked_keys: value.locked_keys.clone(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn favorites_jobs_and_config_round_trip() {
+        let favorites = api::FavoritesView {
+            refs: vec!["key".into()],
+            generation: 8,
+        };
+        assert_eq!(
+            favorites,
+            favorites_from_proto(&favorites_to_proto(&favorites))
+        );
+
+        let job = api::JobStatus {
+            id: "job".into(),
+            kind: api::JobKind::LibrarySync,
+            state: api::JobState::Failed,
+            phase: "done".into(),
+            current: None,
+            total: Some(5),
+            message: None,
+            error: Some(api::ErrorBody {
+                code: api::ErrorCode::Internal,
+                message: "failed".into(),
+            }),
+        };
+        assert_eq!(job, job_status_from_proto(&job_status_to_proto(&job)));
+
+        let config = api::ConfigView {
+            config: serde_json::json!({"volume": 0.5}),
+            locked_keys: vec!["theme".into()],
+        };
+        assert_eq!(
+            config,
+            config_view_from_proto(&config_view_to_proto(&config))
+        );
+    }
+}

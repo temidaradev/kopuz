@@ -5,21 +5,33 @@
 //!
 //! The functions are re-exported flat, so callers stay on `convert::name`.
 
+mod artwork;
+mod catalog;
+mod downloads;
 mod enums;
 mod error;
 mod events;
 mod library;
 mod player;
+mod playlists;
 mod queue;
+mod radio;
 mod service;
+mod sources;
 
 #[cfg(test)]
 mod fixtures;
 
+pub use artwork::*;
+pub use catalog::*;
+pub use downloads::*;
 pub use enums::*;
 pub use error::*;
 pub use events::*;
 pub use library::*;
 pub use player::*;
+pub use playlists::*;
 pub use queue::*;
+pub use radio::*;
 pub use service::*;
+pub use sources::*;

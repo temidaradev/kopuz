@@ -5,26 +5,23 @@
 //! credentialed Jellyfin/Subsonic URLs never reach a client.
 
 use std::fmt::Write as _;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Duration;
 
 use api::ApiError;
 use sha2::{Digest, Sha256};
 
 use crate::session::SessionHandle;
 
-use utils::artwork_image::{
-    HQ_MAX, HQ_QUALITY, HQ_REENCODE_THRESHOLD, THUMB_MAX, THUMB_QUALITY, shrink_jpeg,
-};
-const MAX_REMOTE_ARTWORK_BYTES: usize = 32 * 1024 * 1024;
-const REMOTE_ARTWORK_TIMEOUT: Duration = Duration::from_secs(15);
+use utils::artwork_image::{HQ_MAX, HQ_QUALITY, THUMB_MAX, THUMB_QUALITY, shrink_jpeg};
+
+const MAX_ARTWORK_BYTES: u64 = 32 * 1024 * 1024;
 
 pub struct ArtworkService {
     db: db::Db,
     session: SessionHandle,
     cache_dir: PathBuf,
-    http: reqwest::Client,
+    decode_slot: Arc<tokio::sync::Semaphore>,
 }
 
 #[derive(Debug)]
@@ -39,6 +36,7 @@ pub enum ArtworkEntity<'a> {
     Track(&'a str),
     Album(&'a str),
     Artist(&'a str),
+    Playlist(&'a str),
 }
 
 /// Reverse of `utils::format_artwork_url`: the path a resolved local cover
@@ -59,6 +57,7 @@ fn local_artwork_path(url: &str) -> Option<String> {
     )
 }
 
+#[cfg(test)]
 fn sniff_content_type(bytes: &[u8]) -> &'static str {
     if bytes.starts_with(b"\x89PNG") {
         "image/png"
@@ -86,7 +85,7 @@ impl ArtworkService {
             db,
             session,
             cache_dir,
-            http: reqwest::Client::new(),
+            decode_slot: Arc::new(tokio::sync::Semaphore::new(1)),
         })
     }
 
@@ -107,8 +106,11 @@ impl ArtworkService {
                     .await
                     .map_err(db_error)?
                     .into_iter()
-                    .next()
-                    .ok_or_else(|| ApiError::not_found("unknown track key"))?;
+                    .next();
+                let track = match track {
+                    Some(track) => track,
+                    None => self.session.materialize_track(key.to_string()).await?,
+                };
                 server::cover::track(&config, &track, width).map(|url| url.as_ref().to_string())
             }
             ArtworkEntity::Album(id) => {
@@ -145,6 +147,46 @@ impl ArtworkService {
                     })
                 }
             }
+            ArtworkEntity::Playlist(id) => {
+                let store = self
+                    .db
+                    .load_playlists(&config.active_source)
+                    .await
+                    .map_err(db_error)?;
+                let playlist = store
+                    .playlists
+                    .iter()
+                    .find(|playlist| playlist.id == id)
+                    .ok_or_else(|| ApiError::not_found("unknown playlist id"))?;
+                if let Some(url) =
+                    server::cover::from_path(&config, playlist.cover_path.as_deref(), width)
+                {
+                    Some(url.to_string())
+                } else if let (Some(tag), Some(server)) =
+                    (playlist.image_tag.as_deref(), config.server.as_ref())
+                {
+                    server::cover::resolve(
+                        &config,
+                        reader::CoverRef::remote_item(server.service, id, Some(tag)),
+                        width,
+                    )
+                    .map(|url| url.to_string())
+                } else if let Some(key) = playlist.tracks.first() {
+                    let track = self
+                        .db
+                        .tracks_by_keys(&config.active_source, std::slice::from_ref(key))
+                        .await
+                        .map_err(db_error)?
+                        .into_iter()
+                        .next();
+                    track.and_then(|track| {
+                        server::cover::track(&config, &track, width)
+                            .map(|url| url.as_ref().to_string())
+                    })
+                } else {
+                    None
+                }
+            }
         };
 
         let Some(resolved) = resolved else {
@@ -157,96 +199,109 @@ impl ArtworkService {
         if let Some(path) = local_artwork_path(&resolved) {
             self.local_payload(&path, hq).await
         } else if resolved.starts_with("http://") || resolved.starts_with("https://") {
-            self.proxied_payload(&resolved).await
+            self.proxied_payload(&resolved, hq).await
         } else {
             self.local_payload(&resolved, hq).await
         }
     }
 
     /// Resized by the shared policy in `utils::artwork_image`, then cached on
-    /// disk; an HQ original under the re-encode threshold is served as-is.
+    /// disk under a key that carries the file's size and mtime, so an edited
+    /// cover does not serve its predecessor forever.
     async fn local_payload(&self, path: &str, hq: bool) -> Result<ArtworkPayload, ApiError> {
+        let metadata = tokio::fs::metadata(path)
+            .await
+            .map_err(|_| ApiError::not_found("artwork file missing"))?;
+        if metadata.len() > MAX_ARTWORK_BYTES {
+            return Err(ApiError::invalid_input("artwork file is too large"));
+        }
+        let modified = metadata
+            .modified()
+            .ok()
+            .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|duration| duration.as_nanos())
+            .unwrap_or_default();
         let cache_path = self.cache_dir.join(format!(
             "{}_{}.jpg",
             if hq { "hq" } else { "thumb" },
-            hash_name(path)
+            hash_name(&format!("{path}:{}:{modified}", metadata.len()))
         ));
-        if let Ok(bytes) = tokio::fs::read(&cache_path).await {
-            return Ok(self.payload(bytes, "image/jpeg", path));
+        if let Some(bytes) = read_bounded(&cache_path).await {
+            return Ok(self.payload(bytes, "image/jpeg", &cache_path.to_string_lossy()));
         }
-        let raw = tokio::fs::read(path)
+        let raw = read_bounded(Path::new(path))
             .await
-            .map_err(|_| ApiError::not_found("artwork file missing"))?;
-        let (bytes, content_type) = if hq && raw.len() <= HQ_REENCODE_THRESHOLD {
-            let sniffed = sniff_content_type(&raw);
-            (raw, sniffed)
-        } else {
-            let max = if hq { HQ_MAX } else { THUMB_MAX };
-            let quality = if hq { HQ_QUALITY } else { THUMB_QUALITY };
-            let raw_for_shrink = raw.clone();
-            match tokio::task::spawn_blocking(move || shrink_jpeg(&raw_for_shrink, max, quality))
-                .await
-                .ok()
-                .flatten()
-            {
-                Some(shrunk) => {
-                    if let Some(parent) = cache_path.parent() {
-                        let _ = tokio::fs::create_dir_all(parent).await;
-                    }
-                    let _ = tokio::fs::write(&cache_path, &shrunk).await;
-                    (shrunk, "image/jpeg")
-                }
-                None => {
-                    let sniffed = sniff_content_type(&raw);
-                    (raw, sniffed)
-                }
-            }
-        };
-        Ok(self.payload(bytes, content_type, path))
+            .ok_or_else(|| ApiError::invalid_input("artwork file is too large"))?;
+        let max = if hq { HQ_MAX } else { THUMB_MAX };
+        let quality = if hq { HQ_QUALITY } else { THUMB_QUALITY };
+        let _decode_slot = self
+            .decode_slot
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|_| ApiError::internal("artwork decoder stopped"))?;
+        let bytes = tokio::task::spawn_blocking(move || shrink_jpeg(&raw, max, quality))
+            .await
+            .ok()
+            .flatten()
+            .ok_or_else(|| ApiError::invalid_input("artwork image is invalid or oversized"))?;
+        if let Some(parent) = cache_path.parent() {
+            let _ = tokio::fs::create_dir_all(parent).await;
+        }
+        let _ = tokio::fs::write(&cache_path, &bytes).await;
+        Ok(self.payload(bytes, "image/jpeg", path))
     }
 
     /// Remote covers are fetched daemon-side (the URL may embed credentials)
     /// and cached on disk keyed by the URL, so a client never sees the origin.
-    async fn proxied_payload(&self, url: &str) -> Result<ArtworkPayload, ApiError> {
-        let cache_path = self.cache_dir.join(format!("remote_{}", hash_name(url)));
-        if let Ok(bytes) = tokio::fs::read(&cache_path).await {
-            let content_type = sniff_content_type(&bytes);
-            return Ok(self.payload(bytes, content_type, url));
+    async fn proxied_payload(&self, url: &str, hq: bool) -> Result<ArtworkPayload, ApiError> {
+        let cache_path = self.cache_dir.join(format!(
+            "remote_{}_{}.jpg",
+            if hq { "hq" } else { "thumb" },
+            hash_name(url)
+        ));
+        if let Some(bytes) = read_bounded(&cache_path).await {
+            return Ok(self.payload(bytes, "image/jpeg", &cache_path.to_string_lossy()));
         }
-        let mut response = self
-            .http
-            .get(url)
-            .timeout(REMOTE_ARTWORK_TIMEOUT)
-            .send()
+        let mut response = reqwest::get(url)
             .await
-            .map_err(|error| {
-                ApiError::internal(format!("artwork fetch failed: {}", error.without_url()))
-            })?
-            .error_for_status()
+            .and_then(|response| response.error_for_status())
             .map_err(|error| {
                 ApiError::internal(format!("artwork fetch failed: {}", error.without_url()))
             })?;
         if response
             .content_length()
-            .is_some_and(|length| length > MAX_REMOTE_ARTWORK_BYTES as u64)
+            .is_some_and(|length| length > MAX_ARTWORK_BYTES)
         {
-            return Err(ApiError::internal("artwork exceeds the maximum size"));
+            return Err(ApiError::invalid_input("remote artwork is too large"));
         }
-        let mut bytes = Vec::new();
+        let mut raw = Vec::new();
         while let Some(chunk) = response.chunk().await.map_err(|error| {
             ApiError::internal(format!("artwork fetch failed: {}", error.without_url()))
         })? {
-            if bytes.len().saturating_add(chunk.len()) > MAX_REMOTE_ARTWORK_BYTES {
-                return Err(ApiError::internal("artwork exceeds the maximum size"));
+            if raw.len().saturating_add(chunk.len()) > MAX_ARTWORK_BYTES as usize {
+                return Err(ApiError::invalid_input("remote artwork is too large"));
             }
-            bytes.extend_from_slice(&chunk);
+            raw.extend_from_slice(&chunk);
         }
+        let max = if hq { HQ_MAX } else { THUMB_MAX };
+        let quality = if hq { HQ_QUALITY } else { THUMB_QUALITY };
+        let _decode_slot = self
+            .decode_slot
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|_| ApiError::internal("artwork decoder stopped"))?;
+        let bytes = tokio::task::spawn_blocking(move || shrink_jpeg(&raw, max, quality))
+            .await
+            .ok()
+            .flatten()
+            .ok_or_else(|| ApiError::invalid_input("remote artwork is invalid or oversized"))?;
         if let Some(parent) = cache_path.parent() {
             let _ = tokio::fs::create_dir_all(parent).await;
         }
         let _ = tokio::fs::write(&cache_path, &bytes).await;
-        let content_type = sniff_content_type(&bytes);
-        Ok(self.payload(bytes, content_type, url))
+        Ok(self.payload(bytes, "image/jpeg", url))
     }
 
     fn payload(&self, bytes: Vec<u8>, content_type: &'static str, source: &str) -> ArtworkPayload {
@@ -257,6 +312,22 @@ impl ArtworkService {
             etag,
         }
     }
+}
+
+async fn read_bounded(path: &Path) -> Option<Vec<u8>> {
+    use tokio::io::AsyncReadExt;
+
+    let file = tokio::fs::File::open(path).await.ok()?;
+    let metadata = file.metadata().await.ok()?;
+    if metadata.len() > MAX_ARTWORK_BYTES {
+        return None;
+    }
+    let mut bytes = Vec::with_capacity(metadata.len() as usize);
+    file.take(MAX_ARTWORK_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .await
+        .ok()?;
+    (bytes.len() <= MAX_ARTWORK_BYTES as usize).then_some(bytes)
 }
 
 #[cfg(test)]
