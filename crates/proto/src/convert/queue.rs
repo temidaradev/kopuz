@@ -150,6 +150,30 @@ pub fn queue_window_from_proto(value: &QueueWindow) -> api::QueueWindow {
     }
 }
 
+pub fn queue_persistence_snapshot_to_proto(
+    value: &api::QueuePersistenceSnapshot,
+) -> QueuePersistenceSnapshot {
+    QueuePersistenceSnapshot {
+        tracks: value.tracks.iter().map(track_info_to_proto).collect(),
+        current_index: value.current_index,
+        progress_ms: value.progress_ms,
+        shuffle_order: value.shuffle_order.clone(),
+        shuffle_enabled: value.shuffle_enabled,
+    }
+}
+
+pub fn queue_persistence_snapshot_from_proto(
+    value: &QueuePersistenceSnapshot,
+) -> api::QueuePersistenceSnapshot {
+    api::QueuePersistenceSnapshot {
+        tracks: value.tracks.iter().map(track_info_from_proto).collect(),
+        current_index: value.current_index,
+        progress_ms: value.progress_ms,
+        shuffle_order: value.shuffle_order.clone(),
+        shuffle_enabled: value.shuffle_enabled,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

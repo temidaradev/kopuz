@@ -354,6 +354,23 @@ pub fn download_item_state_from_proto(value: i32) -> api::DownloadItemState {
     }
 }
 
+pub fn favorites_sync_to_proto(value: api::FavoritesSyncMode) -> FavoritesSyncMode {
+    match value {
+        api::FavoritesSyncMode::Instant => FavoritesSyncMode::Instant,
+        api::FavoritesSyncMode::Paginated => FavoritesSyncMode::Paginated,
+        api::FavoritesSyncMode::Unknown => FavoritesSyncMode::Unspecified,
+    }
+}
+
+pub fn favorites_sync_from_proto(value: i32) -> api::FavoritesSyncMode {
+    match FavoritesSyncMode::try_from(value).unwrap_or(FavoritesSyncMode::Unspecified) {
+        FavoritesSyncMode::Paginated => api::FavoritesSyncMode::Paginated,
+        FavoritesSyncMode::Instant | FavoritesSyncMode::Unspecified => {
+            api::FavoritesSyncMode::Instant
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

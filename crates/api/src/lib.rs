@@ -21,11 +21,12 @@ pub use frontend::{
     AlbumFilter, AlbumInfo, AlbumPage, AlbumPresentation, ArtistInfo, ArtistPage,
     ArtistPresentation, ArtworkData, ArtworkEntity, ArtworkRequest, ArtworkTarget, ArtworkUpload,
     CatalogDetail, CatalogDetailRequest, CatalogItem, CatalogItemKind, CatalogPage, CatalogShelf,
-    CredentialProvision, ExternalAccess, IntegrationCredentialProvision,
-    IntegrationCredentialStatus, IntegrationKind, MusicService, PlaylistCapability,
-    PlaylistCatalog, PlaylistFolderInfo, PlaylistInfo, PlaylistTracksRequest, RadioRegistryInfo,
-    RadioStationInfo, RadioStreamInfo, SearchResults, ServerDraft, SourceCapabilities,
-    SourceFolderEntry, SourceInfo, SourceKind, TrackMetadataPatch, YtdlpAudioFormat, YtdlpRequest,
+    CredentialProvision, ExternalAccess, FavoritesSyncMode, IntegrationCredentialProvision,
+    IntegrationCredentialStatus, IntegrationKind, LocalSourceDraft, MusicService,
+    PlaylistCapability, PlaylistCatalog, PlaylistFolderInfo, PlaylistInfo, PlaylistTracksRequest,
+    RadioRegistryInfo, RadioStationInfo, RadioStreamInfo, SearchResults, ServerDraft,
+    SourceCapabilities, SourceFolderEntry, SourceInfo, SourceKind, SourceLoginRequest,
+    TrackMetadataPatch, YtdlpAudioFormat, YtdlpRequest,
 };
 pub use library::{
     DEFAULT_PAGE_LIMIT, LyricChunkView, LyricLineView, LyricsView, Page, StatsView, TrackFilter,
@@ -36,7 +37,10 @@ pub use player::{
     Intent, LoopMode, NowPlaying, Phase, PlayerCommand, PlayerState, PositionAnchor, QueueSummary,
     TrackKind,
 };
-pub use queue::{QueueContext, QueueEdit, QueueItem, QueueMode, QueueWindow, SetQueueRequest};
+pub use queue::{
+    QueueContext, QueueEdit, QueueItem, QueueMode, QueuePersistenceSnapshot, QueueWindow,
+    SetQueueRequest,
+};
 
 pub const API_VERSION: u32 = 1;
 
@@ -84,6 +88,11 @@ pub struct JobStatus {
     pub total: Option<u64>,
     pub message: Option<String>,
     pub error: Option<ErrorBody>,
+    pub request: Option<String>,
+    pub title: Option<String>,
+    pub format: Option<String>,
+    pub speed: Option<String>,
+    pub eta: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -123,6 +132,11 @@ pub trait KopuzApi: Send + Sync {
     async fn set_queue(&self, req: SetQueueRequest) -> Result<CommandAck, ApiError>;
 
     async fn queue_edit(&self, edit: QueueEdit) -> Result<CommandAck, ApiError>;
+
+    async fn queue_snapshot(&self) -> Result<QueuePersistenceSnapshot, ApiError>;
+
+    async fn save_queue_snapshot(&self, snapshot: QueuePersistenceSnapshot)
+    -> Result<(), ApiError>;
 
     async fn config(&self) -> Result<ConfigView, ApiError>;
 
@@ -193,6 +207,8 @@ pub trait KopuzApi: Send + Sync {
 
     async fn track_web_url(&self, key: String) -> Result<Option<String>, ApiError>;
 
+    async fn album_web_url(&self, id: String) -> Result<Option<String>, ApiError>;
+
     async fn top_genre(&self) -> Result<Option<String>, ApiError>;
 
     async fn search(&self, query: String) -> Result<SearchResults, ApiError>;
@@ -228,6 +244,16 @@ pub trait KopuzApi: Send + Sync {
 
     async fn switch_source(&self, id: String) -> Result<SourceInfo, ApiError>;
 
+    async fn upsert_local_source(&self, source: LocalSourceDraft) -> Result<SourceInfo, ApiError>;
+
+    async fn delete_local_source(&self, id: String) -> Result<(), ApiError>;
+
+    async fn set_source_directories(
+        &self,
+        id: String,
+        directories: Vec<String>,
+    ) -> Result<SourceInfo, ApiError>;
+
     async fn upsert_server(&self, server: ServerDraft) -> Result<SourceInfo, ApiError>;
 
     async fn delete_server(&self, id: String) -> Result<(), ApiError>;
@@ -236,6 +262,8 @@ pub trait KopuzApi: Send + Sync {
         &self,
         provision: CredentialProvision,
     ) -> Result<SourceInfo, ApiError>;
+
+    async fn login_source(&self, request: SourceLoginRequest) -> Result<SourceInfo, ApiError>;
 
     async fn clear_credentials(&self, id: String) -> Result<(), ApiError>;
 

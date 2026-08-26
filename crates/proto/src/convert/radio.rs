@@ -7,6 +7,8 @@ pub fn radio_station_to_proto(value: &api::RadioStationInfo) -> RadioStationInfo
         id: value.id.clone(),
         name: value.name.clone(),
         description: value.description.clone(),
+        icon: value.icon.clone(),
+        artwork: value.artwork.clone(),
         tags: value.tags.clone(),
         streams: value
             .streams
@@ -15,6 +17,7 @@ pub fn radio_station_to_proto(value: &api::RadioStationInfo) -> RadioStationInfo
                 id: stream.id.clone(),
                 name: stream.name.clone(),
                 url: stream.url.clone(),
+                icon: stream.icon.clone(),
             })
             .collect(),
         pinned: value.pinned,
@@ -26,6 +29,8 @@ pub fn radio_station_from_proto(value: &RadioStationInfo) -> api::RadioStationIn
         id: value.id.clone(),
         name: value.name.clone(),
         description: value.description.clone(),
+        icon: value.icon.clone(),
+        artwork: value.artwork.clone(),
         tags: value.tags.clone(),
         streams: value
             .streams
@@ -34,6 +39,7 @@ pub fn radio_station_from_proto(value: &RadioStationInfo) -> api::RadioStationIn
                 id: stream.id.clone(),
                 name: stream.name.clone(),
                 url: stream.url.clone(),
+                icon: stream.icon.clone(),
             })
             .collect(),
         pinned: value.pinned,
@@ -66,11 +72,14 @@ mod tests {
             id: "station".into(),
             name: "Station".into(),
             description: "Description".into(),
+            icon: "https://example.com/icon.png".into(),
+            artwork: Some("https://example.com/art.png".into()),
             tags: vec!["tag".into()],
             streams: vec![api::RadioStreamInfo {
                 id: "main".into(),
                 name: "Main".into(),
                 url: "https://example.com/stream".into(),
+                icon: Some("https://example.com/stream.png".into()),
             }],
             pinned: true,
         };

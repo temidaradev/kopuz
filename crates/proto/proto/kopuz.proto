@@ -31,6 +31,7 @@ service Kopuz {
   rpc GetStatus(GetStatusRequest) returns (DaemonStatus);
   rpc GetPlayerState(GetPlayerStateRequest) returns (PlayerState);
   rpc GetQueue(Page) returns (QueueWindow);
+  rpc GetQueueSnapshot(GetQueueSnapshotRequest) returns (QueuePersistenceSnapshot);
   rpc GetTracks(TracksRequest) returns (TrackPage);
   rpc GetFolderTracks(FolderRequest) returns (TrackPage);
   rpc GetStats(GetStatsRequest) returns (Stats);
@@ -53,6 +54,7 @@ service Kopuz {
   rpc GetArtistSampleTracks(Page) returns (TrackPage);
   rpc GetTracksByKeys(TrackKeysRequest) returns (TrackList);
   rpc GetTrackWebUrl(TrackRef) returns (OptionalString);
+  rpc GetAlbumWebUrl(EntityRef) returns (OptionalString);
   rpc GetTopGenre(GetTopGenreRequest) returns (OptionalString);
   rpc Search(SearchRequest) returns (SearchResults);
   rpc GetPlaylists(GetPlaylistsRequest) returns (PlaylistCatalog);
@@ -73,6 +75,7 @@ service Kopuz {
 
   rpc SetQueue(SetQueueRequest) returns (MutationResult);
   rpc EditQueue(QueueEditRequest) returns (MutationResult);
+  rpc SaveQueueSnapshot(QueuePersistenceSnapshot) returns (SaveQueueSnapshotResponse);
   rpc SetFavorite(FavoriteRequest) returns (SetFavoriteResponse);
   rpc StartJob(StartJobRequest) returns (JobRef);
   rpc CancelJob(JobId) returns (CancelJobResponse);
@@ -91,9 +94,13 @@ service Kopuz {
   rpc DeletePlaylistFolder(EntityRef) returns (DeletePlaylistFolderResponse);
   rpc MovePlaylist(MovePlaylistRequest) returns (MovePlaylistResponse);
   rpc SwitchSource(EntityRef) returns (SourceInfo);
+  rpc UpsertLocalSource(LocalSourceDraft) returns (SourceInfo);
+  rpc DeleteLocalSource(EntityRef) returns (DeleteLocalSourceResponse);
+  rpc SetSourceDirectories(SourceDirectories) returns (SourceInfo);
   rpc UpsertServer(ServerDraft) returns (SourceInfo);
   rpc DeleteServer(EntityRef) returns (DeleteServerResponse);
   rpc ProvisionCredentials(CredentialProvision) returns (SourceInfo);
+  rpc LoginSource(SourceLoginRequest) returns (SourceInfo);
   rpc ClearCredentials(EntityRef) returns (ClearCredentialsResponse);
   rpc AuthenticateSource(EntityRef) returns (SourceInfo);
   rpc ProvisionIntegrationCredentials(IntegrationCredentialProvision) returns (IntegrationCredentialStatus);
@@ -121,6 +128,10 @@ service Kopuz {
 // One message per RPC even when it carries nothing, so any of them can gain
 // a field without a signature change. Unit is the marker inside oneofs.
 message Unit {}
+
+message GetQueueSnapshotRequest {}
+message SaveQueueSnapshotResponse {}
+message DeleteLocalSourceResponse {}
 
 message CancelDownloadItemResponse {}
 message GetFavoritesRequest {}
@@ -494,6 +505,14 @@ message QueueItem {
   TrackInfo track = 2;
 }
 
+message QueuePersistenceSnapshot {
+  repeated TrackInfo tracks = 1;
+  uint32 current_index = 2;
+  uint64 progress_ms = 3;
+  repeated uint32 shuffle_order = 4;
+  bool shuffle_enabled = 5;
+}
+
 // ---------------- library ----------------
 
 message TrackFilter {
@@ -737,6 +756,7 @@ message SourceCapabilities {
   PlaylistCapability playlists = 10;
   ArtistPresentation artists = 11;
   AlbumPresentation albums = 12;
+  FavoritesSyncMode favorites_sync = 13;
 }
 
 message SourceInfo {
@@ -747,10 +767,27 @@ message SourceInfo {
   bool active = 5;
   bool authenticated = 6;
   SourceCapabilities capabilities = 7;
+  optional string url = 8;
+  optional string browser = 9;
+  bool anonymous = 10;
+  optional string storefront = 11;
+  optional string language = 12;
+  repeated string directories = 13;
 }
 
 message SourceList {
   repeated SourceInfo sources = 1;
+}
+
+message LocalSourceDraft {
+  optional string id = 1;
+  string name = 2;
+  repeated string directories = 3;
+}
+
+message SourceDirectories {
+  string id = 1;
+  repeated string directories = 2;
 }
 
 message ServerDraft {
@@ -769,6 +806,12 @@ message CredentialProvision {
   string secret = 2;
   optional string user_id = 3;
   optional string browser = 4;
+}
+
+message SourceLoginRequest {
+  string server_id = 1;
+  string username = 2;
+  string password = 3;
 }
 
 message SourceValidation {
@@ -869,6 +912,7 @@ message RadioStreamInfo {
   string id = 1;
   string name = 2;
   string url = 3;
+  optional string icon = 4;
 }
 
 message RadioStationInfo {
@@ -878,6 +922,8 @@ message RadioStationInfo {
   repeated string tags = 4;
   repeated RadioStreamInfo streams = 5;
   bool pinned = 6;
+  string icon = 7;
+  optional string artwork = 8;
 }
 
 message RadioStationList {
@@ -993,6 +1039,11 @@ message JobStatus {
   optional uint64 total = 6;
   optional string message = 7;
   optional ErrorBody error = 8;
+  optional string request = 9;
+  optional string title = 10;
+  optional string format = 11;
+  optional string speed = 12;
+  optional string eta = 13;
 }
 
 message DownloadRequest {
@@ -1192,6 +1243,12 @@ enum AlbumPresentation {
   ALBUM_PRESENTATION_UNSPECIFIED = 0;
   ALBUM_PRESENTATION_STANDARD = 1;
   ALBUM_PRESENTATION_REMOTE = 2;
+}
+
+enum FavoritesSyncMode {
+  FAVORITES_SYNC_MODE_UNSPECIFIED = 0;
+  FAVORITES_SYNC_MODE_INSTANT = 1;
+  FAVORITES_SYNC_MODE_PAGINATED = 2;
 }
 
 enum CatalogItemKind {

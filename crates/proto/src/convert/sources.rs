@@ -17,6 +17,7 @@ pub fn source_capabilities_to_proto(value: &api::SourceCapabilities) -> SourceCa
         playlists: playlist_capability_to_proto(value.playlists) as i32,
         artists: artist_presentation_to_proto(value.artists) as i32,
         albums: album_presentation_to_proto(value.albums) as i32,
+        favorites_sync: favorites_sync_to_proto(value.favorites_sync) as i32,
     }
 }
 
@@ -37,6 +38,7 @@ pub fn source_capabilities_from_proto(
         playlists: playlist_capability_from_proto(value.playlists),
         artists: artist_presentation_from_proto(value.artists),
         albums: album_presentation_from_proto(value.albums),
+        favorites_sync: favorites_sync_from_proto(value.favorites_sync),
     }
 }
 
@@ -51,6 +53,12 @@ pub fn source_info_to_proto(value: &api::SourceInfo) -> SourceInfo {
         active: value.active,
         authenticated: value.authenticated,
         capabilities: Some(source_capabilities_to_proto(&value.capabilities)),
+        url: value.url.clone(),
+        browser: value.browser.clone(),
+        anonymous: value.anonymous,
+        storefront: value.storefront.clone(),
+        language: value.language.clone(),
+        directories: value.directories.clone(),
     }
 }
 
@@ -63,6 +71,12 @@ pub fn source_info_from_proto(value: &SourceInfo) -> api::SourceInfo {
         active: value.active,
         authenticated: value.authenticated,
         capabilities: source_capabilities_from_proto(value.capabilities.as_ref()),
+        url: value.url.clone(),
+        browser: value.browser.clone(),
+        anonymous: value.anonymous,
+        storefront: value.storefront.clone(),
+        language: value.language.clone(),
+        directories: value.directories.clone(),
     }
 }
 
@@ -182,6 +196,38 @@ pub fn external_access_from_proto(value: &ExternalAccess) -> api::ExternalAccess
     }
 }
 
+pub fn local_source_draft_to_proto(value: &api::LocalSourceDraft) -> LocalSourceDraft {
+    LocalSourceDraft {
+        id: value.id.clone(),
+        name: value.name.clone(),
+        directories: value.directories.clone(),
+    }
+}
+
+pub fn local_source_draft_from_proto(value: &LocalSourceDraft) -> api::LocalSourceDraft {
+    api::LocalSourceDraft {
+        id: value.id.clone(),
+        name: value.name.clone(),
+        directories: value.directories.clone(),
+    }
+}
+
+pub fn source_login_to_proto(value: &api::SourceLoginRequest) -> SourceLoginRequest {
+    SourceLoginRequest {
+        server_id: value.server_id.clone(),
+        username: value.username.clone(),
+        password: value.password.clone(),
+    }
+}
+
+pub fn source_login_from_proto(value: &SourceLoginRequest) -> api::SourceLoginRequest {
+    api::SourceLoginRequest {
+        server_id: value.server_id.clone(),
+        username: value.username.clone(),
+        password: value.password.clone(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -208,7 +254,14 @@ mod tests {
                 playlists: api::PlaylistCapability::Reorder,
                 artists: api::ArtistPresentation::Remote,
                 albums: api::AlbumPresentation::Remote,
+                favorites_sync: api::FavoritesSyncMode::Paginated,
             },
+            url: Some("https://example.com".into()),
+            browser: Some("chrome".into()),
+            anonymous: true,
+            storefront: Some("tr".into()),
+            language: Some("tr".into()),
+            directories: vec!["/Music".into()],
         };
         assert_eq!(
             source,

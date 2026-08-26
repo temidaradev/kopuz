@@ -25,6 +25,11 @@ pub fn job_status_to_proto(value: &api::JobStatus) -> JobStatus {
         total: value.total,
         message: value.message.clone(),
         error: value.error.as_ref().map(error_body_to_proto),
+        request: value.request.clone(),
+        title: value.title.clone(),
+        format: value.format.clone(),
+        speed: value.speed.clone(),
+        eta: value.eta.clone(),
     }
 }
 
@@ -38,6 +43,11 @@ pub fn job_status_from_proto(value: &JobStatus) -> api::JobStatus {
         total: value.total,
         message: value.message.clone(),
         error: value.error.as_ref().map(error_body_from_proto),
+        request: value.request.clone(),
+        title: value.title.clone(),
+        format: value.format.clone(),
+        speed: value.speed.clone(),
+        eta: value.eta.clone(),
     }
 }
 
@@ -82,6 +92,11 @@ mod tests {
                 code: api::ErrorCode::Internal,
                 message: "failed".into(),
             }),
+            request: Some("https://example.com/watch".into()),
+            title: Some("Track".into()),
+            format: Some("m4a".into()),
+            speed: Some("1.2MiB/s".into()),
+            eta: Some("00:12".into()),
         };
         assert_eq!(job, job_status_from_proto(&job_status_to_proto(&job)));
 
