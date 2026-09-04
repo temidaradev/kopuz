@@ -187,6 +187,8 @@ mod tests {
     fn unspecified_status_values_are_unknown() {
         assert_eq!(job_state_from_proto(0), api::JobState::Unknown);
         assert_eq!(notice_level_from_proto(0), api::NoticeLevel::Unknown);
+        assert_eq!(job_state_from_proto(i32::MAX), api::JobState::Unknown);
+        assert_eq!(notice_level_from_proto(i32::MAX), api::NoticeLevel::Unknown);
     }
 
     #[test]

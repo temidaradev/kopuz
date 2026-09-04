@@ -12,15 +12,24 @@ impl Session {
         idx: usize,
         allow_crossfade: bool,
         transition_model: Option<QueueModel>,
-    ) {
+    ) -> bool {
         let source_model = transition_model.as_ref().unwrap_or(&self.model);
         let Some(track) = source_model.track_at(idx).cloned() else {
-            return;
+            return false;
         };
+        let is_transition_candidate = transition_model.is_some();
         let (restore_seek, clear_pending_resume) = self.pending_resume_seek(&track);
         let use_crossfade = allow_crossfade
             && self.should_crossfade()
             && restore_seek.is_none_or(|position| position.is_zero());
+        let transition_model = if use_crossfade {
+            let Some(model) = transition_model else {
+                return false;
+            };
+            Some(model)
+        } else {
+            None
+        };
         let crossfade_duration = Duration::from_secs(self.config.crossfade_seconds as u64);
         let is_radio = track.duration == u64::MAX;
         let (is_server, item_id) = match &track.id {
@@ -110,8 +119,8 @@ impl Session {
             // A crossfade candidate that cannot resolve is dropped whole; the
             // end-of-track advance retries on the committed model and reports
             // through the branch below.
-            if transition_model.is_some() {
-                return;
+            if is_transition_candidate {
+                return false;
             }
             // The caller already moved the queue pointer and will publish, so
             // a silent return would present the new track as playing while the
@@ -142,9 +151,8 @@ impl Session {
             self.error = Some(api::ErrorBody {
                 code: api::ErrorCode::SourceUnreachable,
                 message: message.to_string(),
-                details: None,
             });
-            return;
+            return false;
         }
 
         self.error = None;
@@ -207,11 +215,7 @@ impl Session {
             self.radio_task = Some(handle);
         }
 
-        if use_crossfade {
-            let Some(model) = transition_model else {
-                self.fail_load(token, "crossfade transition has no queue candidate");
-                return;
-            };
+        if let Some(model) = transition_model {
             self.pending_transition = Some(PendingTransition {
                 model,
                 to_token: token,
@@ -278,6 +282,7 @@ impl Session {
             let _ = tx.send(SessionCmd::LoadPrepared(Box::new(result)));
         });
         self.load_task = Some((token, task));
+        true
     }
 
     pub(super) fn handle_prepared_load(

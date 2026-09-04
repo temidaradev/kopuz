@@ -7,6 +7,7 @@
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Duration;
 
 use api::ApiError;
 use sha2::{Digest, Sha256};
@@ -16,12 +17,14 @@ use crate::session::SessionHandle;
 use utils::artwork_image::{HQ_MAX, HQ_QUALITY, THUMB_MAX, THUMB_QUALITY, shrink_jpeg};
 
 const MAX_ARTWORK_BYTES: u64 = 32 * 1024 * 1024;
+const REMOTE_ARTWORK_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub struct ArtworkService {
     db: db::Db,
     session: SessionHandle,
     cache_dir: PathBuf,
     decode_slot: Arc<tokio::sync::Semaphore>,
+    http: reqwest::Client,
 }
 
 #[derive(Debug)]
@@ -86,6 +89,7 @@ impl ArtworkService {
             session,
             cache_dir,
             decode_slot: Arc::new(tokio::sync::Semaphore::new(1)),
+            http: reqwest::Client::new(),
         })
     }
 
@@ -227,7 +231,7 @@ impl ArtworkService {
             hash_name(&format!("{path}:{}:{modified}", metadata.len()))
         ));
         if let Some(bytes) = read_bounded(&cache_path).await {
-            return Ok(self.payload(bytes, "image/jpeg", &cache_path.to_string_lossy()));
+            return Ok(self.payload(bytes, "image/jpeg", path));
         }
         let raw = read_bounded(Path::new(path))
             .await
@@ -261,11 +265,18 @@ impl ArtworkService {
             hash_name(url)
         ));
         if let Some(bytes) = read_bounded(&cache_path).await {
-            return Ok(self.payload(bytes, "image/jpeg", &cache_path.to_string_lossy()));
+            return Ok(self.payload(bytes, "image/jpeg", url));
         }
-        let mut response = reqwest::get(url)
+        let mut response = self
+            .http
+            .get(url)
+            .timeout(REMOTE_ARTWORK_TIMEOUT)
+            .send()
             .await
-            .and_then(|response| response.error_for_status())
+            .map_err(|error| {
+                ApiError::internal(format!("artwork fetch failed: {}", error.without_url()))
+            })?
+            .error_for_status()
             .map_err(|error| {
                 ApiError::internal(format!("artwork fetch failed: {}", error.without_url()))
             })?;
@@ -273,14 +284,14 @@ impl ArtworkService {
             .content_length()
             .is_some_and(|length| length > MAX_ARTWORK_BYTES)
         {
-            return Err(ApiError::invalid_input("remote artwork is too large"));
+            return Err(ApiError::internal("remote artwork is too large"));
         }
         let mut raw = Vec::new();
         while let Some(chunk) = response.chunk().await.map_err(|error| {
             ApiError::internal(format!("artwork fetch failed: {}", error.without_url()))
         })? {
             if raw.len().saturating_add(chunk.len()) > MAX_ARTWORK_BYTES as usize {
-                return Err(ApiError::invalid_input("remote artwork is too large"));
+                return Err(ApiError::internal("remote artwork is too large"));
             }
             raw.extend_from_slice(&chunk);
         }
@@ -413,7 +424,7 @@ mod tests {
             .fetch(ArtworkEntity::Track("/lib/art.flac"), false)
             .await
             .expect("cached artwork");
-        assert!(cached.etag.len() > 4);
+        assert_eq!(cached.etag, payload.etag);
 
         let missing = service
             .fetch(ArtworkEntity::Track("/nope"), false)
