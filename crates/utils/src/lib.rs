@@ -2,6 +2,7 @@
 //! and terminal logging.
 
 pub mod artist;
+pub mod artwork_image;
 pub mod build_info;
 pub mod color;
 pub mod db_cache;
@@ -11,6 +12,7 @@ pub mod live_theme;
 pub mod logs;
 pub mod lyrics;
 pub mod musicbrainz;
+pub mod playback_ref;
 pub mod playlist;
 pub mod range_source;
 pub mod redact;
