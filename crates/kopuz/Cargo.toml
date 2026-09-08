@@ -68,6 +68,12 @@ urlencoding = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
 
 
+[target.'cfg(unix)'.dependencies]
+daemon = { workspace = true, features = ["kopuzd"] }
+client = { workspace = true }
+api = { workspace = true }
+futures-util = { workspace = true }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 webkit2gtk = { workspace = true, features = ["v2_16"] }
 libloading = { workspace = true }

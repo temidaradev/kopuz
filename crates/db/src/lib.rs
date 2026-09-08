@@ -12,6 +12,7 @@
 use std::sync::Arc;
 
 mod backend;
+pub mod legacy;
 
 pub use backend::{QueuedScrobbleRow, ScrobbleService};
 
@@ -80,6 +81,10 @@ pub struct TrackFilter {
     pub source: Source,
     pub sort: TrackSort,
     pub search: String,
+    /// Restrict to favorites (`Some(true)`) or non-favorites (`Some(false)`).
+    /// Matched against the local favorites mirror, which every source keeps
+    /// under its own `source.as_str()` key.
+    pub favorite: Option<bool>,
 }
 
 impl TrackFilter {

@@ -32,8 +32,12 @@ mod app_lifecycle;
 mod artwork_protocol;
 #[cfg(not(target_os = "android"))]
 mod chrome_trace;
+#[cfg(not(target_os = "android"))]
+#[cfg(unix)]
+mod daemon_child;
 mod desktop_shell;
 #[cfg(not(target_os = "android"))]
+mod exit_flush;
 mod legacy;
 mod logging;
 mod queue_state;
@@ -216,7 +220,12 @@ fn init_android_tls() -> Result<(), String> {
     .map_err(|e: ::jni::errors::Error| e.to_string())
 }
 
-fn main() {
+fn main() -> std::process::ExitCode {
+    #[cfg(unix)]
+    if daemon_child::is_daemon_process() {
+        return daemon_child::run_as_daemon();
+    }
+
     #[cfg(target_os = "android")]
     if let Err(e) = init_android_tls() {
         panic!("android certificate verifier failed to initialize: {e}");
@@ -253,6 +262,16 @@ fn main() {
         // Guards live in a global inside `logging`; flushed by
         // logging::shutdown() after launch returns or on Ctrl+C.
         logging::init(&log_dir, config_tracing_enabled);
+
+        // Opt-in until the GUI reads through the daemon, and unix-only
+        // until the socket transport has a named-pipe counterpart.
+        #[cfg(unix)]
+        if !matches!(daemon_child::mode_from_args(), daemon_child::Mode::None)
+            && let Err(error) = daemon_child::attach(daemon_child::mode_from_args())
+        {
+            tracing::error!(%error, "could not reach a daemon");
+            return std::process::ExitCode::FAILURE;
+        }
 
         for line in identity_migration {
             tracing::info!("{line}");
@@ -359,9 +378,6 @@ fn main() {
         dioxus::LaunchBuilder::desktop()
             .with_cfg(config)
             .launch(App);
-        // Window closed → flush the log file tail + finalize the
-        // chrome trace's closing bracket.
-        logging::shutdown();
     }
 
     #[cfg(target_os = "android")]
@@ -495,6 +511,8 @@ fn main() {
 
         dioxus::LaunchBuilder::mobile().with_cfg(config).launch(App);
     }
+
+    std::process::ExitCode::SUCCESS
 }
 
 #[component]
@@ -678,6 +696,8 @@ fn App() -> Element {
 
     let mut pending_queue_state_snapshot = use_signal(|| None::<PersistedQueueState>);
     let mut pending_queue_state_revision = use_signal(|| 0u64);
+    #[cfg(not(target_os = "android"))]
+    let close_hides_window = use_signal(|| false);
 
     // tao calls process::exit() after CloseRequested, killing the debounced
     // save loops — without this, the last debounce window of queue/store
@@ -690,14 +710,15 @@ fn App() -> Element {
     #[cfg(not(target_os = "android"))]
     dioxus::desktop::use_wry_event_handler(move |event, _| {
         use dioxus::desktop::tao::event::{Event, WindowEvent};
-        if matches!(
-            event,
-            Event::LoopDestroyed
-                | Event::WindowEvent {
+        let shutting_down = matches!(event, Event::LoopDestroyed)
+            || matches!(
+                event,
+                Event::WindowEvent {
                     event: WindowEvent::CloseRequested,
                     ..
                 }
-        ) {
+            ) && !*close_hides_window.peek();
+        if shutting_down {
             if let Some(db) = app_db::DB_HANDLE.get() {
                 let db = db.clone();
                 // None = the queue is empty (a cleared queue must persist as
@@ -719,25 +740,7 @@ fn App() -> Element {
                     cfg.volume = *volume.peek();
                     cfg
                 });
-                let _ = std::thread::spawn(move || {
-                    let Ok(rt) = tokio::runtime::Builder::new_current_thread()
-                        .enable_all()
-                        .build()
-                    else {
-                        return;
-                    };
-                    rt.block_on(async move {
-                        if let Some(snap) = queue_snap
-                            && let Err(e) = db.save_queue(&snap).await
-                        {
-                            tracing::warn!(error = %e, "queue flush on close failed");
-                        }
-                        if let Some(cfg) = cfg {
-                            let _ = db.save_config(&cfg).await;
-                        }
-                    });
-                })
-                .join();
+                exit_flush::persist_on_fresh_thread(db, queue_snap, cfg);
             }
             // After the persists, so they (and any failure warnings) land in
             // latest.log and the trace. Idempotent across CloseRequested/
@@ -1015,6 +1018,16 @@ fn App() -> Element {
         let _ = *persisted_volume.read();
         config_dirty += 1;
     });
+    #[cfg(not(target_os = "android"))]
+    use_effect(move || {
+        if !*initial_load_done.read() || !*config_loaded_ok.read() {
+            return;
+        }
+        let mut snapshot = config.read().clone();
+        let _ = *persisted_volume.read();
+        snapshot.volume = *volume.peek();
+        exit_flush::stash_config(snapshot);
+    });
     let db_for_cfg_save = db.clone();
     use_future(move || {
         let db = db_for_cfg_save.clone();
@@ -1152,6 +1165,7 @@ fn App() -> Element {
         let win_ctx = window();
         let handle_menu = {
             let win_ctx = win_ctx.clone();
+            let mut close_hides_window = close_hides_window;
             move |id: &dioxus::desktop::trayicon::menu::MenuId| {
                 tracing::debug!("tray menu event id={:?}", id);
                 if *id == TRAY_SHOW_ID {
@@ -1162,23 +1176,25 @@ fn App() -> Element {
                         win_ctx.set_focus();
                     }
                 } else if *id == TRAY_QUIT_ID {
+                    close_hides_window.set(false);
                     win_ctx.set_close_behavior(WindowCloseBehaviour::WindowCloses);
                     win_ctx.close();
                 }
             }
         };
         dioxus::desktop::use_tray_menu_event_handler({
-            let handle_menu = handle_menu.clone();
+            let mut handle_menu = handle_menu.clone();
             move |event| handle_menu(&event.id)
         });
         dioxus::desktop::use_muda_event_handler({
-            let handle_menu = handle_menu.clone();
+            let mut handle_menu = handle_menu.clone();
             move |event| handle_menu(&event.id)
         });
 
         use_effect({
             let tray_slot = tray_slot.clone();
             let tray_warned = tray_warned.clone();
+            let mut close_hides_window = close_hides_window;
             move || {
                 use dioxus::desktop::trayicon::TrayIconBuilder;
                 let want_tray = config.read().minimize_to_tray;
@@ -1200,6 +1216,7 @@ fn App() -> Element {
                     *warned = false;
                 }
                 drop(warned);
+                close_hides_window.set(enabled);
                 window().set_close_behavior(if enabled {
                     WindowCloseBehaviour::WindowHides
                 } else {
@@ -1256,6 +1273,13 @@ fn App() -> Element {
         );
 
         if *pending_queue_state_snapshot.peek() != queue_state {
+            #[cfg(not(target_os = "android"))]
+            exit_flush::stash_queue(
+                queue_state
+                    .clone()
+                    .map(queue_state::snapshot)
+                    .unwrap_or_default(),
+            );
             pending_queue_state_snapshot.set(queue_state);
             pending_queue_state_revision.with_mut(|revision| *revision += 1);
         }
