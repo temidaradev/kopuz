@@ -99,6 +99,25 @@ pub struct ExternalPlayback {
     pub device: Option<String>,
 }
 
+/// Short-lived ownership of an external playback integration. Frontends
+/// renew it by reporting state, so a crashed frontend cannot hold playback
+/// indefinitely.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ExternalPlaybackLease {
+    pub lease_id: String,
+    pub expires_in_ms: u64,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ExternalPlaybackReport {
+    pub lease_id: String,
+    pub track: Option<crate::library::TrackInfo>,
+    pub position_ms: u64,
+    pub playing: bool,
+    pub completed: bool,
+    pub device: Option<String>,
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct QueueSummary {
     pub rev: u64,

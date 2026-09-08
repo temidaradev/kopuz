@@ -1,3 +1,4 @@
+use super::macros::struct_conversion;
 use super::*;
 use crate::*;
 
@@ -58,37 +59,23 @@ pub fn now_playing_from_proto(value: &NowPlaying) -> api::NowPlaying {
     }
 }
 
-pub fn anchor_to_proto(value: &api::PositionAnchor) -> PositionAnchor {
-    PositionAnchor {
-        ms: value.ms,
-        at_ms: value.at_ms,
-        playing: value.playing,
-    }
-}
+struct_conversion!(
+    anchor_to_proto,
+    anchor_from_proto,
+    api::PositionAnchor,
+    PositionAnchor,
+    copy { ms, at_ms, playing },
+    clone {}
+);
 
-pub fn anchor_from_proto(value: &PositionAnchor) -> api::PositionAnchor {
-    api::PositionAnchor {
-        ms: value.ms,
-        at_ms: value.at_ms,
-        playing: value.playing,
-    }
-}
-
-pub fn buffered_to_proto(value: &api::BufferedRange) -> BufferedRange {
-    BufferedRange {
-        start: value.start,
-        end: value.end,
-        total: value.total,
-    }
-}
-
-pub fn buffered_from_proto(value: &BufferedRange) -> api::BufferedRange {
-    api::BufferedRange {
-        start: value.start,
-        end: value.end,
-        total: value.total,
-    }
-}
+struct_conversion!(
+    buffered_to_proto,
+    buffered_from_proto,
+    api::BufferedRange,
+    BufferedRange,
+    copy { start, end, total },
+    clone {}
+);
 
 pub fn queue_summary_to_proto(value: &api::QueueSummary) -> QueueSummary {
     QueueSummary {
@@ -168,6 +155,89 @@ pub fn player_state_from_proto(value: &PlayerState) -> api::PlayerState {
     }
 }
 
+pub fn command_to_proto(value: &api::PlayerCommand) -> PlayerCommand {
+    let cmd = match value {
+        api::PlayerCommand::Play => player_command::Cmd::Play(Unit {}),
+        api::PlayerCommand::Pause => player_command::Cmd::Pause(Unit {}),
+        api::PlayerCommand::Toggle => player_command::Cmd::Toggle(Unit {}),
+        api::PlayerCommand::Next => player_command::Cmd::Next(Unit {}),
+        api::PlayerCommand::Previous => player_command::Cmd::Previous(Unit {}),
+        api::PlayerCommand::Stop => player_command::Cmd::Stop(Unit {}),
+        api::PlayerCommand::Seek { position_ms } => player_command::Cmd::Seek(Seek {
+            position_ms: *position_ms,
+        }),
+        api::PlayerCommand::SetVolume { volume } => {
+            player_command::Cmd::Volume(SetVolume { volume: *volume })
+        }
+        api::PlayerCommand::SetMode { shuffle, loop_mode } => player_command::Cmd::Mode(SetMode {
+            shuffle: *shuffle,
+            r#loop: loop_mode.map(|mode| loop_to_proto(mode) as i32),
+        }),
+    };
+    PlayerCommand { cmd: Some(cmd) }
+}
+
+pub fn command_from_proto(value: &PlayerCommand) -> Option<api::PlayerCommand> {
+    Some(match value.cmd.as_ref()? {
+        player_command::Cmd::Play(_) => api::PlayerCommand::Play,
+        player_command::Cmd::Pause(_) => api::PlayerCommand::Pause,
+        player_command::Cmd::Toggle(_) => api::PlayerCommand::Toggle,
+        player_command::Cmd::Next(_) => api::PlayerCommand::Next,
+        player_command::Cmd::Previous(_) => api::PlayerCommand::Previous,
+        player_command::Cmd::Stop(_) => api::PlayerCommand::Stop,
+        player_command::Cmd::Seek(seek) => api::PlayerCommand::Seek {
+            position_ms: seek.position_ms,
+        },
+        player_command::Cmd::Volume(volume) => api::PlayerCommand::SetVolume {
+            volume: volume.volume,
+        },
+        player_command::Cmd::Mode(mode) => api::PlayerCommand::SetMode {
+            shuffle: mode.shuffle,
+            loop_mode: mode.r#loop.map(loop_from_proto),
+        },
+    })
+}
+
+struct_conversion!(
+    external_playback_to_proto,
+    external_playback_from_proto,
+    api::ExternalPlayback,
+    ExternalPlayback,
+    copy {},
+    clone { kind, device }
+);
+
+struct_conversion!(
+    external_lease_to_proto,
+    external_lease_from_proto,
+    api::ExternalPlaybackLease,
+    ExternalPlaybackLease,
+    copy { expires_in_ms },
+    clone { lease_id }
+);
+
+pub fn external_report_to_proto(value: &api::ExternalPlaybackReport) -> ExternalPlaybackReport {
+    ExternalPlaybackReport {
+        lease_id: value.lease_id.clone(),
+        track: value.track.as_ref().map(track_info_to_proto),
+        position_ms: value.position_ms,
+        playing: value.playing,
+        completed: value.completed,
+        device: value.device.clone(),
+    }
+}
+
+pub fn external_report_from_proto(value: &ExternalPlaybackReport) -> api::ExternalPlaybackReport {
+    api::ExternalPlaybackReport {
+        lease_id: value.lease_id.clone(),
+        track: value.track.as_ref().map(track_info_from_proto),
+        position_ms: value.position_ms,
+        playing: value.playing,
+        completed: value.completed,
+        device: value.device.clone(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::fixtures::sample_state;
@@ -178,5 +248,64 @@ mod tests {
         let state = sample_state();
         let back = player_state_from_proto(&player_state_to_proto(&state));
         assert_eq!(state, back);
+    }
+
+    #[test]
+    fn external_playback_dtos_round_trip() {
+        let playback = api::ExternalPlayback {
+            kind: "spotify".into(),
+            device: Some("device".into()),
+        };
+        assert_eq!(
+            playback,
+            external_playback_from_proto(&external_playback_to_proto(&playback))
+        );
+
+        let lease = api::ExternalPlaybackLease {
+            lease_id: "lease".into(),
+            expires_in_ms: 15_000,
+        };
+        assert_eq!(
+            lease,
+            external_lease_from_proto(&external_lease_to_proto(&lease))
+        );
+
+        let report = api::ExternalPlaybackReport {
+            lease_id: "lease".into(),
+            track: Some(api::TrackInfo {
+                key: "track".into(),
+                service: Some(api::MusicService::Spotify),
+                ..Default::default()
+            }),
+            position_ms: 42,
+            playing: true,
+            completed: false,
+            device: Some("device".into()),
+        };
+        assert_eq!(
+            report,
+            external_report_from_proto(&external_report_to_proto(&report))
+        );
+    }
+
+    #[test]
+    fn every_command_round_trips() {
+        for command in [
+            api::PlayerCommand::Play,
+            api::PlayerCommand::Pause,
+            api::PlayerCommand::Toggle,
+            api::PlayerCommand::Next,
+            api::PlayerCommand::Previous,
+            api::PlayerCommand::Stop,
+            api::PlayerCommand::Seek { position_ms: 1_200 },
+            api::PlayerCommand::SetVolume { volume: 0.4 },
+            api::PlayerCommand::SetMode {
+                shuffle: Some(true),
+                loop_mode: Some(api::LoopMode::Track),
+            },
+        ] {
+            let back = command_from_proto(&command_to_proto(&command)).expect("command survives");
+            assert_eq!(command, back);
+        }
     }
 }

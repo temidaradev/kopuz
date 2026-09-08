@@ -28,6 +28,11 @@ pub fn queue_context_to_proto(value: &api::QueueContext) -> QueueContext {
             station_id: station_id.clone(),
             stream_id: stream_id.clone(),
         }),
+        api::QueueContext::InlineTracks { tracks } => {
+            queue_context::Kind::InlineTracks(queue_context::InlineTracks {
+                tracks: tracks.iter().map(track_info_to_proto).collect(),
+            })
+        }
     };
     QueueContext { kind: Some(kind) }
 }
@@ -52,6 +57,9 @@ pub fn queue_context_from_proto(value: &QueueContext) -> Option<api::QueueContex
             station_id: radio.station_id.clone(),
             stream_id: radio.stream_id.clone(),
         },
+        queue_context::Kind::InlineTracks(tracks) => api::QueueContext::InlineTracks {
+            tracks: tracks.tracks.iter().map(track_info_from_proto).collect(),
+        },
     })
 }
 
@@ -61,6 +69,7 @@ pub fn set_queue_to_proto(value: &api::SetQueueRequest) -> SetQueueRequest {
         context: Some(queue_context_to_proto(&value.context)),
         start_index: value.start_index,
         shuffle: value.shuffle,
+        insert_index: value.insert_index,
     }
 }
 
@@ -70,6 +79,7 @@ pub fn set_queue_from_proto(value: &SetQueueRequest) -> Option<api::SetQueueRequ
         context: queue_context_from_proto(value.context.as_ref()?)?,
         start_index: value.start_index,
         shuffle: value.shuffle,
+        insert_index: value.insert_index,
     })
 }
 
@@ -140,6 +150,30 @@ pub fn queue_window_from_proto(value: &QueueWindow) -> api::QueueWindow {
     }
 }
 
+pub fn queue_persistence_snapshot_to_proto(
+    value: &api::QueuePersistenceSnapshot,
+) -> QueuePersistenceSnapshot {
+    QueuePersistenceSnapshot {
+        tracks: value.tracks.iter().map(track_info_to_proto).collect(),
+        current_index: value.current_index,
+        progress_ms: value.progress_ms,
+        shuffle_order: value.shuffle_order.clone(),
+        shuffle_enabled: value.shuffle_enabled,
+    }
+}
+
+pub fn queue_persistence_snapshot_from_proto(
+    value: &QueuePersistenceSnapshot,
+) -> api::QueuePersistenceSnapshot {
+    api::QueuePersistenceSnapshot {
+        tracks: value.tracks.iter().map(track_info_from_proto).collect(),
+        current_index: value.current_index,
+        progress_ms: value.progress_ms,
+        shuffle_order: value.shuffle_order.clone(),
+        shuffle_enabled: value.shuffle_enabled,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,6 +188,7 @@ mod tests {
             },
             start_index: Some(2),
             shuffle: Some(false),
+            insert_index: None,
         };
         let back = set_queue_from_proto(&set_queue_to_proto(&request)).expect("request survives");
         assert_eq!(request, back);
@@ -161,5 +196,27 @@ mod tests {
         let edit = api::QueueEdit::Move { from: 1, to: 3 };
         let back = queue_edit_from_proto(&queue_edit_to_proto(&edit)).expect("edit survives");
         assert_eq!(edit, back);
+    }
+
+    #[test]
+    fn inline_tracks_insert_round_trips() {
+        let request = api::SetQueueRequest {
+            mode: api::QueueMode::Insert,
+            context: api::QueueContext::InlineTracks {
+                tracks: vec![api::TrackInfo {
+                    key: "k".into(),
+                    uid: "ytmusic:k".into(),
+                    title: "t".into(),
+                    artists: vec!["a".into()],
+                    source: "ytmusic".into(),
+                    ..Default::default()
+                }],
+            },
+            start_index: None,
+            shuffle: None,
+            insert_index: Some(4),
+        };
+        let back = set_queue_from_proto(&set_queue_to_proto(&request)).expect("request survives");
+        assert_eq!(request, back);
     }
 }

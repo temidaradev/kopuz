@@ -1,5 +1,5 @@
 use crate::error::ErrorBody;
-use crate::player::{BufferedRange, PlayerState};
+use crate::player::{BufferedRange, PlayerCommand, PlayerState};
 
 /// The invalidation tables, mirroring `hooks::db_reactivity::Table`. A
 /// `library.invalidated` event tells clients to re-run reads that depend on
@@ -26,6 +26,7 @@ pub enum JobKind {
     FavoritesSync,
     PlaylistSync,
     Download,
+    Ytdlp,
     Unknown,
 }
 
@@ -70,6 +71,11 @@ pub enum ApiEvent {
         token: u64,
         ranges: Vec<BufferedRange>,
     },
+    /// A transport command that arrived while playback is external (e.g.
+    /// Spotify in a browser). The daemon's engine is stopped and cannot act
+    /// on it, so the command is forwarded to whichever frontend owns the
+    /// external session; other clients ignore it.
+    PlayerExternalCommand(PlayerCommand),
     QueueChanged {
         rev: u64,
         length: u32,
